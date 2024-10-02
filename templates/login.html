@@ -10,12 +10,12 @@
     <div class="my-24 mx-auto w-1/3 py-12 px-4 flex flex-col items-center bg-slate-300">
         <h1 class="text-center text-3xl">Glad to see you back.</h1>
         <p class="text-center mb-8">This is the login page.</p>
-        <form action="" method="post" class="grid grid-cols-3 items-center gap-4">
+        <form action="/login" method="post" class="grid grid-cols-3 items-center gap-4">
             <label for="">Username</label>
-            <input type="text" class="py-4 px-8 col-span-2">
+            <input type="text" name='username' class="py-4 px-8 col-span-2">
 
             <label for="">Password</label>
-            <input type="password" class="py-4 px-8 col-span-2">
+            <input type="password" name='password' class="py-4 px-8 col-span-2">
 
             <button type="submit" class="bg-white col-span-3 py-4 my-4">Login!</button>
         </form>
