@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import UserMixin, LoginManager, login_user, logout_user, login_required, current_user
 
+from flask_sqlalchemy import SQLAlchemy
+
 app = Flask(__name__)
 app.secret_key = 'supersecretkey123'
 
@@ -93,8 +95,13 @@ def add_task():
     task_title = request.form['title']
     task_description = request.form['description']
 
-    new_task = Task(id=len(tasks[user_id]), title=task_title, description=task_description)
-    tasks[user_id].append(new_task)
+    if len(task_title) > 0:
+        new_task = Task(id=len(tasks[user_id]), title=task_title, description=task_description)
+        tasks[user_id].append(new_task)
+
+        flash('Task created successfully!', 'success')
+    else:
+        flash('Error: Task title is required.', 'error')
 
     return redirect(url_for('dashboard'))
 
@@ -102,12 +109,12 @@ def add_task():
 @app.route('/edit_task', methods=['POST'])
 @login_required
 def edit_task():
-    user_id = request.form['user_id']
-    task_id = int(request.form['task_id'])
+    user_id = current_user.id
+    task_idx = int(request.form['task_idx'])
     task_title = request.form['title']
     task_description = request.form['description']
 
-    task = tasks[user_id][task_id]
+    task = tasks[user_id][task_idx]
 
     task.title = task_title
     task.description = task_description
@@ -118,10 +125,10 @@ def edit_task():
 @app.route('/remove_task', methods=['POST'])
 @login_required
 def remove_task():
-    user_id = request.form['user_id']
-    task_id = int(request.form['task_id'])
+    user_id = current_user.id
+    task_idx = int(request.form['task_idx'])
 
-    (tasks[user_id]).pop(task_id)
+    (tasks[user_id]).pop(task_idx)
 
     return redirect(url_for('dashboard'))
 
@@ -131,8 +138,9 @@ def remove_task():
 def mark_completed():
     user_id = current_user.id
     task_id = int(request.form['task_id'])
-
-    tasks[user_id][task_id].completed = not tasks[user_id][task_id].completed
+    
+    task = next(x for x in tasks[user_id] if x.id == task_id)
+    task.completed = not task.completed
 
     return redirect(url_for('dashboard'))
 
@@ -140,8 +148,11 @@ def mark_completed():
 @login_required
 def sort():
     user_id = current_user.id
-    if request.form['discriminator'] == 'name':
+    discriminator = request.form['discriminator']
+    if discriminator == 'name':
         key= (lambda x: x.title)
+    elif discriminator == 'completion':
+        key= (lambda x: x.completed)
     tasks[user_id].sort(key=key)
     return redirect(url_for('dashboard'))
 

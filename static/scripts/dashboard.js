@@ -1,5 +1,5 @@
 editForm = document.getElementById("taskEditor")
-formTaskID = document.getElementsByName('task_id')[0]
+formTaskID = document.getElementsByName('task_idx')[0]
 taskUl = document.getElementById("taskList")
 
 function editTask(taskName)
