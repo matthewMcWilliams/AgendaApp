@@ -1,10 +1,18 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import UserMixin, LoginManager, login_user, logout_user, login_required, current_user
-
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_migrate import Migrate
+import math
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey123'
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignmenthq.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # To suppress warnings
+
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -14,44 +22,37 @@ login_manager.login_view = 'login'
 # to rebuild CSS:    npx tailwindcss -o ./static/styles/output.css --watch
 
 
-users = {
-    "user1": {"id": "user1", "password": "password123"},
-    "user2": {"id": "user2", "password": "password456"}
-}
 
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
 
-tasks = {
-    'user1': [],
-    'user2': []
-}
+    tasks = db.relationship('Task', backref='owner', lazy=True)
 
-
-
-class User(UserMixin):
-    def __init__(self, id):
-        self.id = id
-    
-    @staticmethod
-    def get(user_id):
-        user_data = users.get(user_id)
-        if user_data:
-            return User(user_id)
-        return None
+    def __repr__(self):
+        return f'<User {self.username}>'
 
 
 
-class Task:
-    def __init__(self, id, title, description, completed=False) -> None:
-        self.id = id
-        self.title = title
-        self.description = description
-        self.completed = completed
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.String(500), nullable=True)
+    status = db.Column(db.Boolean, default=False)
+    priority = db.Column(db.Integer, default=math.inf)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.get(user_id)
+    return db.session.get(User, user_id)
+
+
+with app.app_context():
+    db.create_all()
 
 
 @app.route('/')
@@ -64,9 +65,9 @@ def login():
     if request.method == 'POST':
         user_id = request.form['username']
         password = request.form['password']
-        user = User.get(user_id)
+        user = db.session.execute(db.select(User).filter_by(username=user_id)).scalar_one()
 
-        if user and users[user_id]['password'] == password:
+        if user and check_password_hash(user.password_hash, password):
             login_user(user)
             return redirect(url_for('dashboard'))
         else:
@@ -84,7 +85,7 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    user_tasks = tasks.get(current_user.id, [])
+    user_tasks = db.session.execute(db.select(Task).filter_by(user_id=current_user.id).order_by(Task.priority)).scalars()
     return render_template('dashboard.html', tasks=user_tasks)
 
 
@@ -96,8 +97,10 @@ def add_task():
     task_description = request.form['description']
 
     if len(task_title) > 0:
-        new_task = Task(id=len(tasks[user_id]), title=task_title, description=task_description)
-        tasks[user_id].append(new_task)
+        user_tasks = db.session.execute(db.select(Task).filter_by(user_id=current_user.id)).scalars()
+        new_task = Task(title=task_title, description=task_description, user_id=current_user.id)
+        db.session.add(new_task)
+        db.session.commit()
 
         flash('Task created successfully!', 'success')
     else:
@@ -109,15 +112,14 @@ def add_task():
 @app.route('/edit_task', methods=['POST'])
 @login_required
 def edit_task():
-    user_id = current_user.id
-    task_idx = int(request.form['task_idx'])
+    task_id = int(request.form['task_id'])
     task_title = request.form['title']
     task_description = request.form['description']
 
-    task = tasks[user_id][task_idx]
-
+    task = db.session.get(Task, task_id)
     task.title = task_title
     task.description = task_description
+    db.session.commit()
 
     return redirect(url_for('dashboard'))
 
@@ -125,10 +127,11 @@ def edit_task():
 @app.route('/remove_task', methods=['POST'])
 @login_required
 def remove_task():
-    user_id = current_user.id
-    task_idx = int(request.form['task_idx'])
+    task_id = int(request.form['task_id'])
 
-    (tasks[user_id]).pop(task_idx)
+    task = db.session.get(Task, task_id)
+    db.session.delete(task)
+    db.session.commit()
 
     return redirect(url_for('dashboard'))
 
@@ -136,24 +139,31 @@ def remove_task():
 @app.route('/complete_task', methods=['POST'])
 @login_required
 def mark_completed():
-    user_id = current_user.id
     task_id = int(request.form['task_id'])
     
-    task = next(x for x in tasks[user_id] if x.id == task_id)
-    task.completed = not task.completed
+    task = db.session.get(Task, task_id)
+    task.status = not task.status
+    db.session.commit()
 
     return redirect(url_for('dashboard'))
 
 @app.route('/sort', methods=['POST'])
 @login_required
 def sort():
+
     user_id = current_user.id
     discriminator = request.form['discriminator']
     if discriminator == 'name':
         key= (lambda x: x.title)
     elif discriminator == 'completion':
-        key= (lambda x: x.completed)
-    tasks[user_id].sort(key=key)
+        key= (lambda x: x.status)
+    tasks = db.session.execute(db.select(Task).filter_by(user_id=current_user.id))
+    new_order = [t[0] for t in tasks]
+    new_order.sort(key=key)
+    for task in new_order:
+        task.priority = new_order.index(task)
+    db.session.commit()
+
     return redirect(url_for('dashboard'))
 
 

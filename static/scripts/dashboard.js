@@ -1,13 +1,12 @@
-editForm = document.getElementById("taskEditor")
-formTaskID = document.getElementsByName('task_idx')[0]
-taskUl = document.getElementById("taskList")
+const editForm = document.getElementById("taskEditor")
+const editformTaskID = document.getElementById('currentlyEditingTaskID')
+const taskUl = document.getElementById("taskList")
 
-function editTask(taskName)
+function editTask(taskID)
 {
     editForm.style.display = 'flex'
 
-    names = Array.from(taskUl.getElementsByTagName("strong"))
-    nameArray = names.map(element => element.innerText);
+    let task_id = document.getElementById(taskID)
 
-    formTaskID.value = nameArray.indexOf(taskName)
+    editformTaskID.value = taskID
 }
