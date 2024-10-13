@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import UserMixin, LoginManager, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import MetaData
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 import math
@@ -11,7 +12,16 @@ app.secret_key = 'supersecretkey123'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignmenthq.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # To suppress warnings
 
-db = SQLAlchemy(app)
+convention = {
+    "ix": 'ix_%(column_0_label)s',
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+
+metadata = MetaData(naming_convention=convention)
+db = SQLAlchemy(app, metadata=metadata)
 migrate = Migrate(app, db)
 
 login_manager = LoginManager()
@@ -29,6 +39,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
 
     tasks = db.relationship('Task', backref='owner', lazy=True)
+    decks = db.relationship('StudyDeck', backref='owner', lazy=True)
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -43,7 +54,29 @@ class Task(db.Model):
     priority = db.Column(db.Integer, default=math.inf)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    deck_id = db.Column(db.Integer, db.ForeignKey('study_deck.id'), nullable=True)
 
+
+
+class StudyDeck(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    tasks = db.relationship('Task', backref='deck', lazy=True)
+    cards = db.relationship('StudyCard', backref='deck', lazy=True)
+
+
+
+class StudyCard(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    term = db.Column(db.String(200), nullable=False)
+    definition = db.Column(db.String(500), nullable=False)
+    mastery_level = db.Column(db.Integer, default=0)
+
+    deck_id = db.Column(db.Integer, db.ForeignKey('study_deck.id'), nullable=False)
+
+    
 
 
 @login_manager.user_loader
