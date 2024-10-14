@@ -4,94 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/output.css') }}">
-    <title>Task Manager App | Dashboard</title>
+    <title>Assignment HQ | Dashboard</title>
 </head>
-<body>
-    <div class="my-16 mx-auto w-1/2 py-12 px-4 flex flex-col gap-6items-center bg-slate-300">
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class='bg-red-200 p-5 mb-5'>
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-
-        <form id='taskEditor' action="/edit_task" method="POST" class="bg-orange-300 hidden flex-col items-stretch px-5 py-10 mb-10">
-            <h2 class="text-2xl mb-4">Task Editor</h2>
-            <input type="hidden" name="task_id" value="-1" id="currentlyEditingTaskID">
-            <p>Title</p>
-            <input type="text" name='title' placeholder="Organize Sticky Notes" class="py-4 px-8">
-            <p>Description</p>
-            <textarea name='description' placeholder='They have been all over the place... I think they are causing a rat problem.' class="h-40 py-4 px-8"></textarea>
-            <button type="submit" formaction='/edit_task', class="bg-white py-4 mt-4">Update</button>
-            <button type="submit" formaction='/remove_task', class="bg-white py-4 my-4">Remove</button>
-            <button></button>
-        </form>
+<body class="grid grid-cols-[25%_75%] h-screen">
+    <div id="sidebar" class="bg-secondaryBG flex flex-col h-screen content-between">
+        <img src="{{ url_for('static', filename='imgs/logo.svg')}}" alt="Assignment HQ Logo" class="px-6 my-8 self-center">
 
 
-        <div class="pb-8">
-            <h1 class="text-center mb-4 text-3xl">Hello, {{ current_user.username }}.</h1>
-            <p class="text-center mb-8">Glad to see you back.</p>
-            <hr class="border-black mb-3">
-            <h2 class="text-2xl mb-4">Your Tasks</h2>
-            <form class="inline" action="/sort" method="post">
-                <input type="hidden" name="discriminator" value="name">
-                <button class='bg-white p-5 mb-5 w-full no-underline' type='submit'>Sort By Name</button>
+        <div class="flex flex-col text-right text-xl h-full space-between">
+            <div class="flex flex-col text-right px-8 text-xl h-full">
+                <a href="#" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-primaryFG py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/dashboardLogo.svg') }}" alt="" class="h-6 ml-2">
+                    <div class="h-4 px-3">Dashboard</div>
+                </a>
+
+                <a href='/study' class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-primaryFG py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/studyLogo.svg') }}" alt="" class="h-6 ml-2">
+                    <div class="h-4 px-3">Study</div>
+                </a>
+                
+                <a href="/clause" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-primaryFG py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/aiCrab.svg') }}" alt="" class="h-6 ml-2">
+                    <div class="h-4 px-3">AI Study Buddy</div>
+                </a>
+                
+                <a href="/chat" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-primaryFG py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/classChat.svg') }}" alt="" class="h-6 ml-2">
+                    <div class="h-4 px-3">Class Chat</div>
+                </a>
+            </div>
+
+            <a href="/logout" class="bg-darkFG hover:bg-primaryFG text-primaryBG text-center mt-full p-4 rounded-full mb-8 mx-8">Logout</a>
+        </div>
+    </div>
+    <div id="dashboard" class="flex flex-col gap-4 bg-primaryBG min-h-screen px-20 py-20">
+        <h2 class="text-3xl">Tasks</h2>
+        <hr class="border-black">
+
+        <div id="taskcontainer" class="flex flex-col gap-2">
+
+
+            {% for task in tasks %}
+
+            <form action="/edit_task" method="post" class="flex bg-secondaryBG p-2 rounded-full justify-between text-lg">
+
+                {%if task.status%}
+                <s class="w-[100%]">
+                {%endif%}
+                <input type="text" name="title" id="" value="{{task.title}}" class="bg-secondaryBG rounded-full px-8 w-1/2 block focus:outline-none">
+                {%if task.status%}
+                </s>
+                {%endif%}
+
+                <input type="hidden" name="task_id" value="{{task.id}}">
+                <input type="hidden" name="description" value="{{task.description}}">
+                <div class="flex gap-20 font-bold px-20">
+                    <button class="block cursor-pointer" formaction="/complete_task">Complete</button>
+                    <button class="block cursor-pointer" formaction="/remove_task">Remove</button>
+                </div>
             </form>
-            <form class="inline" action="/sort" method="post">
-                <input type="hidden" name="discriminator" value="completion">
-                <button class='bg-white p-5 mb-5 w-full no-underline' type='submit'>Sort By Status</button>
+
+            {% endfor %}
+
+            <form action="/add_task" method="post" class="flex bg-secondaryBG p-2 rounded-full justify-between text-lg">
+                <input type="text" name="title" id="" autofocus placeholder="New Task" class="bg-secondaryBG rounded-full px-8 w-1/2 block focus:outline-none">
+                <input type="hidden" name="description" value="">
             </form>
-            <ul id="taskList">
-                {% for task in tasks %}
-                <form method="post" action="/complete_task" id="{{task.id}}">
 
-                    {% if task.status %}
-                    <span class="line-through">
-                    {% endif %}
-
-                        <input type="hidden" name="task_id" value="{{ task.id }}">
-                        
-                        <strong>{{ task.title }}</strong>: {{ task.description }} 
-
-                    {% if task.status %}
-                    </span>
-                    {% endif %}
-                    
-                    <div class="flex justify-stretch gap-5">
-                    <button class='bg-white p-5 w-full no-underline' type='button' onclick="editTask( '{{ task.id }}' )">Edit</button>
-                    <button class='bg-white p-5 w-full no-underline' type="submit" value="submit_value">Mark Complete</button>
-                    </div>
-
-
-                    <br>
-                </form>
-                {% else %}
-                    <li>No tasks yet!</li>
-                {% endfor %}
-            </ul>
         </div>
 
-        <hr class="border-black mb-3">
-        <div>
-            <h2 class="text-2xl mb-4">Add a Task</h2>
-            <form action="/add_task" method="POST" class="flex flex-col items-stretch">
-                <p>Title</p>
-                <input type="text" autofocus name='title' placeholder="Organize Sticky Notes" class="py-4 px-8">
-                <p>Description</p>
-                <textarea name='description' placeholder='They have been all over the place... I think they are causing a rat problem.' class="h-40 py-4 px-8"></textarea>
-                <button type="submit" class="bg-white py-4 my-4">Add Task!</button>
-            </form>
-        </div>
-
-        <a href="/logout" class="bg-orange-200 w-full p-5 text-center">Logout</a>
 
     </div>
-
-
-    <script src="{{ url_for('static',filename='scripts/dashboard.js') }}"></script>
 </body>
 </html>

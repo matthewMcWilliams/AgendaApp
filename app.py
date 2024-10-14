@@ -125,7 +125,6 @@ def dashboard():
 @app.route('/add_task', methods=['POST'])
 @login_required
 def add_task():
-    user_id = current_user.id
     task_title = request.form['title']
     task_description = request.form['description']
 
