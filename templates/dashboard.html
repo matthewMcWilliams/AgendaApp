@@ -7,51 +7,62 @@
     <title>Assignment HQ | Dashboard</title>
 </head>
 <body class="grid grid-cols-[25%_75%] h-screen">
-    <div id="sidebar" class="bg-secondaryBG flex flex-col h-screen content-between">
-        <img src="{{ url_for('static', filename='imgs/logo.svg')}}" alt="Assignment HQ Logo" class="px-6 my-8 self-center">
+    <div id="sidebar" class="bg-eerie-black-900 flex flex-col h-screen content-between text-white">
+        <a href="/"><img src="{{ url_for('static', filename='imgs/logo.svg')}}" alt="Assignment HQ Logo" class="px-6 my-8 self-center"></a>
 
 
         <div class="flex flex-col text-right text-xl h-full space-between">
             <div class="flex flex-col text-right px-8 text-xl h-full">
-                <a href="#" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-primaryFG py-6 px-4 rounded-full">
-                    <img src="{{ url_for('static',filename='imgs/dashboardLogo.svg') }}" alt="" class="h-6 ml-2">
+                <a href="#" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-eerie-black-700 py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/dashboardLogo.svg') }}" alt="" class="h-6 ml-2 invert">
                     <div class="h-4 px-3">Dashboard</div>
                 </a>
 
-                <a href='/study' class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-primaryFG py-6 px-4 rounded-full">
-                    <img src="{{ url_for('static',filename='imgs/studyLogo.svg') }}" alt="" class="h-6 ml-2">
+                <a href='/study' class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-eerie-black-700 py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/studyLogo.svg') }}" alt="" class="h-6 ml-2 invert">
                     <div class="h-4 px-3">Study</div>
                 </a>
                 
-                <a href="/clause" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-primaryFG py-6 px-4 rounded-full">
-                    <img src="{{ url_for('static',filename='imgs/aiCrab.svg') }}" alt="" class="h-6 ml-2">
+                <a href="/clause" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-eerie-black-700 py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/aiCrab.svg') }}" alt="" class="h-6 ml-2 invert">
                     <div class="h-4 px-3">AI Study Buddy</div>
                 </a>
                 
-                <a href="/chat" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-primaryFG py-6 px-4 rounded-full">
-                    <img src="{{ url_for('static',filename='imgs/classChat.svg') }}" alt="" class="h-6 ml-2">
+                <a href="/chat" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-eerie-black-700 py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/classChat.svg') }}" alt="" class="h-6 ml-2 invert">
                     <div class="h-4 px-3">Class Chat</div>
                 </a>
             </div>
 
-            <a href="/logout" class="bg-darkFG hover:bg-primaryFG text-primaryBG text-center mt-full p-4 rounded-full mb-8 mx-8">Logout</a>
+            <a href="/logout" class="bg-darkFG hover:bg-eerie-black-700 text-center mt-full p-4 rounded-full mb-8 mx-8">Logout</a>
         </div>
     </div>
-    <div id="dashboard" class="flex flex-col gap-4 bg-primaryBG min-h-screen px-20 py-20">
+    <div id="dashboard" class="flex flex-col gap-4 bg-white min-h-screen px-20 py-20">
         <h2 class="text-3xl">Tasks</h2>
         <hr class="border-black">
+
+        <form id='sort-form' action="/sort_tasks" method="post" class="flex gap-6">
+            <input id='sort-discriminator' type="hidden" name="discriminator">
+            <button id='sort-name' class="block bg-persian-red-600 px-10 py-5 rounded-full text-white font-bold">Sort By Name</button>
+            <button id='sort-status' class="block bg-persian-red-600 px-10 py-5 rounded-full text-white font-bold">Sort By Status</button>
+        </form>
 
         <div id="taskcontainer" class="flex flex-col gap-2">
 
 
+            <form action="/add_task" method="post" class="flex bg-eerie-black-100 border-glaucous-500 border-2 p-2 rounded-full justify-between focus-within:bg-white focus-within:border focus-within:shadow-lg">
+                <input type="text" name="title" id="" autofocus placeholder="Whats on your mind?" class="bg-inherit rounded-full px-8 w-1/2 block focus:outline-none">
+                <input type="hidden" name="description" value="">
+            </form>
+
             {% for task in tasks %}
 
-            <form action="/edit_task" method="post" class="flex bg-secondaryBG p-2 rounded-full justify-between text-lg">
+            <form action="/edit_task" method="post" class="flex bg-eerie-black-100 border-glaucous-500 border-2 p-2 rounded-full justify-between focus-within:bg-white focus-within:border focus-within:shadow-lg">
 
                 {%if task.status%}
                 <s class="w-[100%]">
                 {%endif%}
-                <input type="text" name="title" id="" value="{{task.title}}" class="bg-secondaryBG rounded-full px-8 w-1/2 block focus:outline-none">
+                <input type="text" name="title" id="" value="{{task.title}}" class="bg-inherit rounded-full px-8 w-1/2 block focus:outline-none">
                 {%if task.status%}
                 </s>
                 {%endif%}
@@ -59,6 +70,7 @@
                 <input type="hidden" name="task_id" value="{{task.id}}">
                 <input type="hidden" name="description" value="{{task.description}}">
                 <div class="flex gap-20 font-bold px-20">
+                    <button class="hidden cursor-pointer" formaction="/edit_task">Edit</button>
                     <button class="block cursor-pointer" formaction="/complete_task">Complete</button>
                     <button class="block cursor-pointer" formaction="/remove_task">Remove</button>
                 </div>
@@ -66,14 +78,10 @@
 
             {% endfor %}
 
-            <form action="/add_task" method="post" class="flex bg-secondaryBG p-2 rounded-full justify-between text-lg">
-                <input type="text" name="title" id="" autofocus placeholder="New Task" class="bg-secondaryBG rounded-full px-8 w-1/2 block focus:outline-none">
-                <input type="hidden" name="description" value="">
-            </form>
-
         </div>
 
-
+        <script src="{{ url_for('static',filename='scripts/jquery-3.7.1.min.js') }}"></script>
+        <script src="{{ url_for('static',filename='scripts/dashboard.js') }}"></script>
     </div>
 </body>
 </html>

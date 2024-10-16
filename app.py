@@ -179,24 +179,28 @@ def mark_completed():
 
     return redirect(url_for('dashboard'))
 
-@app.route('/sort', methods=['POST'])
+@app.route('/sort_tasks', methods=['POST'])
 @login_required
 def sort():
-
-    user_id = current_user.id
     discriminator = request.form['discriminator']
     if discriminator == 'name':
         key= (lambda x: x.title)
-    elif discriminator == 'completion':
+    elif discriminator == 'status':
         key= (lambda x: x.status)
+    else:
+        print(discriminator)
     tasks = db.session.execute(db.select(Task).filter_by(user_id=current_user.id))
-    new_order = [t[0] for t in tasks]
-    new_order.sort(key=key)
+    new_order = sorted([t[0] for t in tasks], key=lambda x: x.title.casefold())
     for task in new_order:
         task.priority = new_order.index(task)
     db.session.commit()
 
     return redirect(url_for('dashboard'))
+
+@app.route('/study', methods=['GET'])
+@login_required
+def study():
+    return render_template('study.html')
 
 
 if __name__ == '__main__':
