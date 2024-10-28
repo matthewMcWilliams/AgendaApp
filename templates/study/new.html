@@ -4,6 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/output.css') }}">
+
+
+
+    <style>
+
+        /* "Fix" color picker */
+
+        input[type="color"]::-moz-color-swatch {
+        border: none;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 0;
+        border-radius: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+        border: none;
+        }
+
+    </style>
+
+
+
+
+
     <title>Assignment HQ | Dashboard</title>
 </head>
 <body class="grid grid-cols-[25%_75%] h-screen">
@@ -48,36 +74,21 @@
 
     <div id="main" class="flex flex-col bg-white min-h-screen px-20 py-20 overflow-y-scroll">
 
-        <h1 class="text-3xl mb-4">Study</h2>
-        <hr class="border-black mb-4">
+        <h1 class="text-3xl mb-4">Create Deck</h2>
+        <hr class="border-black mb-6">
 
-        <div class="grid grid-cols-3 gap-x-16 gap-y-8">
-
-            <a href='/study/new_deck' class="bg-glaucous-700 flex flex-col rounded-2xl shadow-md cursor-pointer hover:shadow-lg place-content-end">
-                <div class=" flex flex-col h-44 pl-[72px] place-content-end">
-                    <img class="block w-24 p-6" src="{{ url_for('static',filename='imgs/plus.svg') }}" alt="">
-                </div>
-                <p class="p-6 font-semibold text-lg text-center text-white">Create Deck</p>
-            </a>
-
-            <div class="bg-eerie-black-200 flex flex-col rounded-2xl shadow-md cursor-pointer hover:shadow-lg">
-                <div class="bg-glaucous-300 h-44 rounded-t-xl"></div>
-                <p class="p-6 font-semibold text-lg">Deck Title</p>
+        <form action="/study/new_deck" class="py-6 px-4 flex flex-col gap-6 border-4 rounded">
+            <input class='px-2 py-3 text-xl border-b-4 border-persian-red-100 focus:outline-none focus:border-persian-red-300' autofocus type="text" placeholder="Deck Title">
+            <div class="flex">
+                <input class='w-full h-12 border-4 rounded-full border-white ring-4 ring-persian-red-100 focus:ring-persian-red-300 focus:outline-none' type="color" name="deck-color" id="" value="#A3ABD8">
+                <label for="deck-color" class=" px-10 ml-1 font-bold w-56 self-center text-center ">Deck Color</label>
             </div>
-
-
-            {% for deck in decks %}
-
-            <div class="bg-eerie-black-200 flex flex-col rounded-2xl shadow-md cursor-pointer hover:shadow-lg">
-                <div class="bg-glaucous-300 h-44 rounded-t-xl"></div>
-                <p class="p-6 font-semibold text-lg">{{ deck.title }}</p>
-            </div>
-
-            {% endfor %}
-            
-        </div>
+            <label for="data" class=" font-bold pt-6 -mb-3">Deck Import</label>
+            <textarea name="data" id="" rows='16' class="border-y-4 border-persian-red-100 focus:border-persian-red-300 focus:outline-none py-6" placeholder="Term, Definition"></textarea>
+        </form>
 
         <script src="{{ url_for('static',filename='scripts/jquery-3.7.1.min.js') }}"></script>
     </div>
 </body>
 </html>
+

@@ -62,6 +62,8 @@ class StudyDeck(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(70), nullable=False)
+    color = db.Column(db.String(9))
 
     tasks = db.relationship('Task', backref='deck', lazy=True)
     cards = db.relationship('StudyCard', backref='deck', lazy=True)
@@ -184,13 +186,13 @@ def mark_completed():
 def sort():
     discriminator = request.form['discriminator']
     if discriminator == 'name':
-        key= (lambda x: x.title)
+        key= (lambda x: x.title.casefold())
     elif discriminator == 'status':
         key= (lambda x: x.status)
     else:
         print(discriminator)
     tasks = db.session.execute(db.select(Task).filter_by(user_id=current_user.id))
-    new_order = sorted([t[0] for t in tasks], key=lambda x: x.title.casefold())
+    new_order = sorted([t[0] for t in tasks], key=key)
     for task in new_order:
         task.priority = new_order.index(task)
     db.session.commit()
@@ -200,7 +202,13 @@ def sort():
 @app.route('/study', methods=['GET'])
 @login_required
 def study():
-    return render_template('study.html')
+    user_decks = db.session.execute(db.select(StudyDeck).filter_by(user_id=current_user.id)).scalars()
+    return render_template('study.html', decks=user_decks)
+
+@app.route('/study/new_deck')
+@login_required
+def new_deck():
+    return render_template('study/new.html')
 
 
 if __name__ == '__main__':
