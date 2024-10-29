@@ -631,6 +631,22 @@ video {
   margin-top: 2.5rem;
 }
 
+.-mb-6 {
+  margin-bottom: -1.5rem;
+}
+
+.-mb-8 {
+  margin-bottom: -2rem;
+}
+
+.-mb-12 {
+  margin-bottom: -3rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
 .block {
   display: block;
 }
@@ -655,6 +671,10 @@ video {
   height: 1rem;
 }
 
+.h-40 {
+  height: 10rem;
+}
+
 .h-44 {
   height: 11rem;
 }
@@ -671,8 +691,12 @@ video {
   height: 100vh;
 }
 
-.h-40 {
-  height: 10rem;
+.h-20 {
+  height: 5rem;
+}
+
+.h-16 {
+  height: 4rem;
 }
 
 .min-h-screen {
@@ -708,6 +732,10 @@ video {
   width: min-content;
 }
 
+.w-screen {
+  width: 100vw;
+}
+
 .cursor-pointer {
   cursor: pointer;
 }
@@ -722,6 +750,14 @@ video {
 
 .grid-cols-\[25\%_75\%\] {
   grid-template-columns: 25% 75%;
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .flex-col {
@@ -742,6 +778,10 @@ video {
 
 .justify-between {
   justify-content: space-between;
+}
+
+.justify-stretch {
+  justify-content: stretch;
 }
 
 .gap-20 {
@@ -767,6 +807,24 @@ video {
 
 .gap-y-8 {
   row-gap: 2rem;
+}
+
+.gap-y-20 {
+  row-gap: 5rem;
+}
+
+.gap-y-10 {
+  row-gap: 2.5rem;
+}
+
+.gap-x-3 {
+  -moz-column-gap: 0.75rem;
+       column-gap: 0.75rem;
+}
+
+.gap-x-6 {
+  -moz-column-gap: 1.5rem;
+       column-gap: 1.5rem;
 }
 
 .divide-y-2 > :not([hidden]) ~ :not([hidden]) {
@@ -818,13 +876,21 @@ video {
   border-bottom-width: 4px;
 }
 
-.border-y-8 {
-  border-top-width: 8px;
-  border-bottom-width: 8px;
+.border-x-4 {
+  border-left-width: 4px;
+  border-right-width: 4px;
 }
 
 .border-b-4 {
   border-bottom-width: 4px;
+}
+
+.border-r-4 {
+  border-right-width: 4px;
+}
+
+.border-none {
+  border-style: none;
 }
 
 .border-black {
@@ -837,14 +903,19 @@ video {
   border-color: rgb(245 224 224 / var(--tw-border-opacity));
 }
 
+.border-persian-red-200 {
+  --tw-border-opacity: 1;
+  border-color: rgb(230 182 182 / var(--tw-border-opacity));
+}
+
 .border-white {
   --tw-border-opacity: 1;
   border-color: rgb(255 255 255 / var(--tw-border-opacity));
 }
 
-.border-persian-red-200 {
+.border-eerie-black-200 {
   --tw-border-opacity: 1;
-  border-color: rgb(230 182 182 / var(--tw-border-opacity));
+  border-color: rgb(204 215 213 / var(--tw-border-opacity));
 }
 
 .bg-eerie-black-100 {
@@ -896,16 +967,6 @@ video {
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
 }
 
-.bg-persian-red-700 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(116 36 36 / var(--tw-bg-opacity));
-}
-
-.bg-persian-red-500 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(185 57 57 / var(--tw-bg-opacity));
-}
-
 .p-4 {
   padding: 1rem;
 }
@@ -953,6 +1014,11 @@ video {
   padding-right: 2rem;
 }
 
+.py-10 {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
 .py-12 {
   padding-top: 3rem;
   padding-bottom: 3rem;
@@ -981,11 +1047,6 @@ video {
 .py-6 {
   padding-top: 1.5rem;
   padding-bottom: 1.5rem;
-}
-
-.py-10 {
-  padding-top: 2.5rem;
-  padding-bottom: 2.5rem;
 }
 
 .pl-\[72px\] {
@@ -1072,6 +1133,41 @@ video {
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 
+.transition {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.delay-150 {
+  transition-delay: 150ms;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+.ease-in-out {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.before\:content-\[\'\{\{card\.term\}\}\'\]::before {
+  --tw-content: '{{card.term}}';
+  content: var(--tw-content);
+}
+
+.before\:content-\[\{\{card\.term\}\}\]::before {
+  --tw-content: {{card.term}};
+  content: var(--tw-content);
+}
+
+.before\:content-\[attr\(term\)\]::before {
+  --tw-content: attr(term);
+  content: var(--tw-content);
+}
+
 .focus-within\:border:focus-within {
   border-width: 1px;
 }
@@ -1085,6 +1181,27 @@ video {
   --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+
+.hover\:-translate-y-1:hover {
+  --tw-translate-y: -0.25rem;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
+.hover\:scale-110:hover {
+  --tw-scale-x: 1.1;
+  --tw-scale-y: 1.1;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
+.hover\:border-x-4:hover {
+  border-left-width: 4px;
+  border-right-width: 4px;
+}
+
+.hover\:border-y-4:hover {
+  border-top-width: 4px;
+  border-bottom-width: 4px;
 }
 
 .hover\:border-persian-red-400:hover {
@@ -1107,10 +1224,30 @@ video {
   background-color: rgb(200 99 99 / var(--tw-bg-opacity));
 }
 
+.hover\:bg-persian-red-100:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(245 224 224 / var(--tw-bg-opacity));
+}
+
 .hover\:shadow-lg:hover {
   --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+
+.hover\:before\:content-\[\'\{\{card\.term\}\}\'\]:hover::before {
+  --tw-content: '{{card.term}}';
+  content: var(--tw-content);
+}
+
+.hover\:before\:content-none:hover::before {
+  --tw-content: none;
+  content: var(--tw-content);
+}
+
+.hover\:after\:content-\[attr\(definition\)\]:hover::after {
+  --tw-content: attr(definition);
+  content: var(--tw-content);
 }
 
 .focus\:border-persian-red-300:focus {

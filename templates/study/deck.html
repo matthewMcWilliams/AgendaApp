@@ -78,19 +78,36 @@
             <h1 class="text-3xl">{{deck.name}}</h1>
             <form action='/study/remove_deck' method='post' class="">
                 <input type="hidden" name="deck_id" value="{{deck.id}}">
-                <input type="submit" class="bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer" value="Delete">
+                <input type="submit" class="transition ease-in-out delay-150 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer" value="Delete">
             </form>
         </div>
         <hr class="border-black mb-6">
 
 
-        {% for card in deck.cards %}
-            <p>{{card.term}}</p>
-            <p>{{card.definition}}</p>
-            <br>
-        {% else %}
-            <div class="h-40 border-y-4 border-persian-red-200 hover:border-persian-red-400 text-center text-xl py-10">No Cards Found</div>
-        {% endfor %}
+        <h2 class="text-md mb-2 font-bold">Study</h2>
+
+
+        <div class="grid grid-cols-4 gap-6 mb-8">
+    
+            <button type="submit" class="transition ease-in-out delay-150 hover:-translate-y-1 hover:scale-110 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer">Flashcards</button>
+            <button type="submit" class="transition ease-in-out delay-150 hover:-translate-y-1 hover:scale-110 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer">Learn</button>
+            <button type="submit" class="transition ease-in-out delay-150 hover:-translate-y-1 hover:scale-110 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer">Play</button>
+        </div>
+
+
+        <h2 class="text-md mb-2 font-bold">Deck Contents</h2>
+        <div class="grid grid-cols-2 gap-y-10 gap-x-6">
+
+            {% for card in deck.cards %}
+
+            <div term='{{card.term}}' definition='{{card.definition}}' class="h-16 border-b-4 border-eerie-black-200 hover:border-persian-red-400 hover:bg-persian-red-100 text-center text-xl py-5 px-10 before:content-[attr(term)] hover:before:content-none hover:after:content-[attr(definition)] transition ease-in-out"></div>
+            
+            {% else %}
+            
+            <div class="h-20 border-b-4 hover:border-persian-red-400 hover:bg-persian-red-100 text-center text-xl py-5 transition ease-in-out delay-150 cursor-pointer">No Cards Found</div>
+            
+            {% endfor %}
+        </div>
 
         
 

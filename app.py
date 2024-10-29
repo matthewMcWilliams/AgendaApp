@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import UserMixin, LoginManager, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, exc
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 import math
@@ -59,7 +59,7 @@ class Task(db.Model):
 
 
 class StudyDeck(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(70), nullable=False)
@@ -221,6 +221,14 @@ def new_deck():
         db.session.add(new_deck)
         db.session.commit()
 
+        processed_data = [[j.strip() for j in i.split(',')] for i in data.splitlines()]
+
+        for card in processed_data:
+            new_card = StudyCard(deck_id=new_deck.id, term=card[0], definition=card[1])
+            db.session.add(new_card)
+
+        db.session.commit()
+
         if True:
             return redirect(url_for('study'))
         else:
@@ -241,7 +249,10 @@ def remove_deck():
     deck_id = int(request.form['deck_id'])
 
     deck = db.session.get(StudyDeck, deck_id)
+    for card in deck.cards:
+        db.session.delete(card)
     db.session.delete(deck)
+
     db.session.commit()
     
     return redirect(url_for('study'))
