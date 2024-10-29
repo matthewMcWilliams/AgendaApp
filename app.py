@@ -68,6 +68,10 @@ class StudyDeck(db.Model):
     tasks = db.relationship('Task', backref='deck', lazy=True)
     cards = db.relationship('StudyCard', backref='deck', lazy=True)
 
+    def get_display_name(self):
+        return self.name.replace(' ','-')
+
+
 
 
 class StudyCard(db.Model):
@@ -223,6 +227,25 @@ def new_deck():
             flash('Invalid username or password.')
 
     return render_template('study/new.html')
+
+@app.route('/study/decks/<int:id>/<name>', methods=['GET'])
+@login_required
+def deck_view(id, name):
+    deck = db.session.execute(db.select(StudyDeck).filter_by(id=id)).scalar()
+    return render_template('study/deck.html', deck=deck)
+
+
+@app.route('/study/remove_deck', methods=['POST'])
+@login_required
+def remove_deck():    
+    deck_id = int(request.form['deck_id'])
+
+    deck = db.session.get(StudyDeck, deck_id)
+    db.session.delete(deck)
+    db.session.commit()
+    
+    return redirect(url_for('study'))
+
 
 
 if __name__ == '__main__':
