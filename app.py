@@ -205,9 +205,23 @@ def study():
     user_decks = db.session.execute(db.select(StudyDeck).filter_by(user_id=current_user.id)).scalars()
     return render_template('study.html', decks=user_decks)
 
-@app.route('/study/new_deck')
+@app.route('/study/new_deck', methods=['GET', 'POST'])
 @login_required
 def new_deck():
+    if request.method == 'POST':
+        name = request.form['title']
+        color = request.form['color']
+        data = request.form['data']
+
+        new_deck = StudyDeck(user_id=current_user.id, name=name, color=color)
+        db.session.add(new_deck)
+        db.session.commit()
+
+        if True:
+            return redirect(url_for('study'))
+        else:
+            flash('Invalid username or password.')
+
     return render_template('study/new.html')
 
 
