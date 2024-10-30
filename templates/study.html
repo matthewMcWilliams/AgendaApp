@@ -63,7 +63,7 @@
 
             {% for deck in decks %}
 
-            <a href="/study/decks/{{deck.id}}/{{deck.get_display_name()}}" class="bg-eerie-black-200 flex flex-col rounded-2xl shadow-md cursor-pointer hover:shadow-lg">
+            <a href="/study/decks/{{deck.id}}" class="bg-eerie-black-200 flex flex-col rounded-2xl shadow-md cursor-pointer hover:shadow-lg">
                 <div class="h-44 rounded-t-xl" style="background-color: {{deck.color}};"></div>
                 <p class="p-6 font-semibold text-lg">{{ deck.name }}</p>
             </a>

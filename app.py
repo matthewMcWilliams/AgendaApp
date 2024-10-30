@@ -236,9 +236,9 @@ def new_deck():
 
     return render_template('study/new.html')
 
-@app.route('/study/decks/<int:id>/<name>', methods=['GET'])
+@app.route('/study/decks/<int:id>', methods=['GET'])
 @login_required
-def deck_view(id, name):
+def deck_view(id):
     deck = db.session.execute(db.select(StudyDeck).filter_by(id=id)).scalar()
     return render_template('study/deck.html', deck=deck)
 
@@ -256,6 +256,17 @@ def remove_deck():
     db.session.commit()
     
     return redirect(url_for('study'))
+
+@app.route('/study/decks/<int:id>/flashcards', methods=['GET'])
+@login_required
+def flashcards(id):
+    deck = db.session.execute(db.select(StudyDeck).filter_by(id=id)).scalar()
+
+
+    cards = '[' + ','.join([f'[{"'"+card.term+"'"}, {"'"+card.definition+"'"}]' for card in deck.cards]) + ']'
+
+
+    return render_template(f'study/flashcards.html', deck=deck, cards=cards)
 
 
 
