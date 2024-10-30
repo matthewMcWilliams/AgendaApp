@@ -3,9 +3,26 @@ let betterData = JSON.parse(data.replaceAll('&#39;','"'))
 let showAnswer = false
 let termCounter = 0
 
-function updateText() {
-    $('#displayCard').text(betterData[termCounter][+showAnswer])
+function updateText(ms=0) {
+    console.log(ms)
+    $('#displayCard').delay(ms).queue(function(){
+        $(this).text(betterData[termCounter][+showAnswer]).dequeue()
+    })
 }
+
+$('#displayCard').hover(function(){
+    if ($('#flipOnHoverCheckbox').is(':checked')) {
+        showAnswer = true
+        updateText(140)
+    }
+}, function(){
+    if ($('#flipOnHoverCheckbox').is(':checked')) {
+        showAnswer = false
+        updateText(140)
+    }
+})
+
+
 
 $('#displayCard').click(function(){
     showAnswer = !showAnswer

@@ -77,15 +77,19 @@
         
         <div class="flex justify-between mb-4">
             <h1 class="text-3xl">{{deck.name}}: Flashcards</h1>
-            <a href='.' class="transition ease-in-out delay-150 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer text-center">Back</a>
+            <a href='../{{deck.id}}' class="transition ease-in-out delay-150 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer text-center">Back</a>
         </div>
         <hr class="border-black mb-12">
 
         <div class="self-center h-3/5 w-4/5">
             <div class="transition ease-in-out delay-150 border-8 h-full text-center p-16 cursor-pointer text-3xl mb-8 hover:-translate-y-1 hover:scale-105 hover:bg-eerie-black-100 hover:border-eerie-black-200" id="displayCard"></div>
-            <div class="flex justify-between gap-20">
+            <div class="flex justify-between gap-20 mb-4">
                 <button class="transition ease-in-out delay-50 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer text-center w-full" id="backArrow">Back</button>
                 <button class="transition ease-in-out delay-50 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer text-center w-full" id="nextArrow">Next</button>
+            </div>
+            <div class="flex justify-center align-top cursor-pointer">
+                <input checked class="block w-6 h-6 cursor-pointer" type="checkbox" name="flipOnHover" id="flipOnHoverCheckbox">
+                <label class='block text-xl ml-6 cursor-pointer' for="flipOnHoverCheckbox">Flip Card On Mouse Hover</label>
             </div>
         </div>
 
