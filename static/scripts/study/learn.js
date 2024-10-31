@@ -48,9 +48,38 @@ class Batch {
         this.transitioning = false
         // todo: add multiple choice for new words
         if (this.currentCard[2] == 0) {
-            // multiple choice
-        } else if (this.currentCard == 1) {
-            // written
+
+            $("#multi-response").removeClass("hidden")
+            $("#multi-response").addClass("flex")
+            
+            $("#written-response").addClass("hidden")
+            $("#written-response").removeClass("flex")
+
+            let wordsCopy = [...betterData]
+            shuffle(wordsCopy)
+            let choices = wordsCopy.slice(0, 3)
+            console.log(choices)
+            if (choices.map(x => x[0].toLowerCase()).includes(this.currentCard[0].toLowerCase())) {
+                choices = wordsCopy.slice(0,4)
+            } else {
+                choices.push(this.currentCard)
+            }
+
+            console.log(choices)
+            $("#choiceA").text(choices[0][0])
+            $("#choiceB").text(choices[1][0])
+            $("#choiceC").text(choices[2][0])
+            $("#choiceD").text(choices[3][0])
+
+        } else if (this.currentCard[2] == 1) {
+
+            $("#written-response").removeClass("hidden")
+            $("#written-response").addClass("flex")
+            
+            $("#multi-response").addClass("hidden")
+            $("#multi-response").removeClass("flex")
+            
+
         } else {
             alert("ALREADY FINISHED THIS")
         }
@@ -108,7 +137,7 @@ class Batch {
             data.filter(c => c[2] < 2)
         )
         let output = []
-        for (let i = 0; i < BATCH_SIZE; i++) {
+        for (let i = 0; i < Math.min(data.length, BATCH_SIZE); i++) {
             output.push(generator())
         }
         return output
@@ -131,6 +160,28 @@ $("#checkButton").click(function(){
     }
 })
 
+$("#choiceA").click(function(){
+    if (!currentBatch.transitioning) {
+        currentBatch.checkAnswer($("#choiceA").text())
+    }
+})
+$("#choiceB").click(function(){
+    if (!currentBatch.transitioning) {
+        currentBatch.checkAnswer($("#choiceB").text())
+    }
+})
+$("#choiceC").click(function(){
+    if (!currentBatch.transitioning) {
+        currentBatch.checkAnswer($("#choiceC").text())
+    }
+})
+$("#choiceD").click(function(){
+    if (!currentBatch.transitioning) {
+        currentBatch.checkAnswer($("#choiceD").text())
+    }
+})
+
+
 function startRound() {
     $("#learn-main").removeClass("hidden")
     $("#learn-main").addClass("flex")
@@ -145,5 +196,4 @@ function startRound() {
 
 $("#startButton").click(startRound)
 $("#continueButton").click(startRound)
-
 

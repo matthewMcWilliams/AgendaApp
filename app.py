@@ -268,7 +268,7 @@ def flashcards(id):
 @login_required
 def learn(id):
     deck = db.session.execute(db.select(StudyDeck).filter_by(id=id)).scalar()
-    cards = '[' + ','.join([f'[{"'"+card.term+"'"}, {"'"+card.definition+"'"}, {card.mastery_level}]' for card in deck.cards]) + ']'
+    cards = '[' + ','.join([f'[{"'"+card.term+"'"}, {"'"+card.definition+"'"}, {card.mastery_level}, {card.id}]' for card in deck.cards]) + ']'
     return render_template(f'study/learn.html', deck=deck, cards=cards)
 
 
