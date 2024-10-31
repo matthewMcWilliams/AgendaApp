@@ -261,12 +261,15 @@ def remove_deck():
 @login_required
 def flashcards(id):
     deck = db.session.execute(db.select(StudyDeck).filter_by(id=id)).scalar()
-
-
     cards = '[' + ','.join([f'[{"'"+card.term+"'"}, {"'"+card.definition+"'"}]' for card in deck.cards]) + ']'
-
-
     return render_template(f'study/flashcards.html', deck=deck, cards=cards)
+
+@app.route('/study/decks/<int:id>/learn', methods=['GET'])
+@login_required
+def learn(id):
+    deck = db.session.execute(db.select(StudyDeck).filter_by(id=id)).scalar()
+    cards = '[' + ','.join([f'[{"'"+card.term+"'"}, {"'"+card.definition+"'"}, {card.mastery_level}]' for card in deck.cards]) + ']'
+    return render_template(f'study/learn.html', deck=deck, cards=cards)
 
 
 
