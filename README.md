@@ -44,4 +44,4 @@ This project does not have a specified license.
 - AI learning assistant (not started)
 
 ## Contact Information
-Feel free to message me through GitHub if you have any questions or need support.
+Feel free to message me through GitHub if you have any questions or need support. Let me know with an issue if I need to set up a Discord server or something.
