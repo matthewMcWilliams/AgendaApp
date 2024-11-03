@@ -1,6 +1,6 @@
-let betterData = JSON.parse(data.replaceAll('&#39;','"'))
-const BATCH_SIZE = 7
-
+data = data.replaceAll('&#34;','"')
+let betterData = JSON.parse(data)
+const BATCH_SIZE = 4
 
 
 // https://stackoverflow.com/questions/17891173/how-to-efficiently-randomly-select-array-item-without-repeats
@@ -42,12 +42,20 @@ class Batch {
         return this.words.length > 0
     }
 
+    masteryCount(x) {
+        return betterData.filter(item => {
+            return item["mastery"] == x
+        }).length
+    }
+
+    
+
     nextCard() {
         this.currentCard = this.words.shift()
-        $("#displayCardFront").text(this.currentCard[1])
+        $("#displayCardFront").text(this.currentCard["definition"])
         this.transitioning = false
         // todo: add multiple choice for new words
-        if (this.currentCard[2] == 0) {
+        if (this.currentCard["mastery"] == 0) {
 
             $("#multi-response").removeClass("hidden")
             $("#multi-response").addClass("flex")
@@ -58,20 +66,19 @@ class Batch {
             let wordsCopy = [...betterData]
             shuffle(wordsCopy)
             let choices = wordsCopy.slice(0, 3)
-            console.log(choices)
-            if (choices.map(x => x[0].toLowerCase()).includes(this.currentCard[0].toLowerCase())) {
+            if (choices.map(x => x["term"].toLowerCase()).includes(this.currentCard["term"].toLowerCase())) {
                 choices = wordsCopy.slice(0,4)
             } else {
                 choices.push(this.currentCard)
             }
+            shuffle(choices)
 
-            console.log(choices)
-            $("#choiceA").text(choices[0][0])
-            $("#choiceB").text(choices[1][0])
-            $("#choiceC").text(choices[2][0])
-            $("#choiceD").text(choices[3][0])
+            $("#choiceA").text(choices[0]["term"])
+            $("#choiceB").text(choices[1]["term"])
+            $("#choiceC").text(choices[2]["term"])
+            $("#choiceD").text(choices[3]["term"])
 
-        } else if (this.currentCard[2] == 1) {
+        } else if (this.currentCard["mastery"] == 1) {
 
             $("#written-response").removeClass("hidden")
             $("#written-response").addClass("flex")
@@ -89,18 +96,18 @@ class Batch {
         // todo: mastery tracking functionality
         
         let correct = false
-        if (value.toLowerCase() === this.currentCard[0].toLowerCase()) {
+        if (value.toLowerCase() === this.currentCard["term"].toLowerCase()) {
             correct = true
             $("#displayCardBack").addClass("correct")
             this.score ++
-            this.currentCard[2]++
+            this.currentCard["mastery"]++
         } else {
             correct = false
             $("#displayCardBack").addClass("wrong")
-            this.currentCard[2] = 0
+            this.currentCard["mastery"] = 0
         }
         
-        $("#displayCardBack").text(this.currentCard[0])
+        $("#displayCardBack").text(this.currentCard["term"])
         $("#flip-card").addClass("flipped")
 
         this.transitioning = true
@@ -113,31 +120,61 @@ class Batch {
             if (currentBatch.cardsRemaining) {
                 currentBatch.nextCard()
             } else {
-                $("#learn-main").removeClass("flex")
-                $("#learn-main").addClass("hidden")
-
-                $("#correctCount").text(currentBatch.score)
-                $("#batchCount").text(BATCH_SIZE)
-                $("#questionCount").text(betterData.length)
-                let masteryCount = betterData.filter(function(item) {
-                    return item[2] >= 2
-                }).length
-                $("#masteredCount").text(masteryCount)
-                $("#toGoCount").text(betterData.length - masteryCount)
-                
-
-                $("#round-finished").addClass("grid")
-                $("#round-finished").removeClass("hidden")
+                currentBatch.finishRound()
             }
-        }, 3000)
+        }, 1000)
     }
+
+    finishRound() {
+        $("#learn-main").removeClass("flex")
+        $("#learn-main").addClass("hidden")
+
+        $("#correctCount").text(this.score)
+        $("#batchCount").text(BATCH_SIZE)
+
+        $("#unknownCount").text(this.masteryCount(0))
+        $("#learnedCount").text(this.masteryCount(1))
+        $("#masteryCount").text(this.masteryCount(2))
+        
+        this.saveData()
+
+        if (this.masteryCount(2) >= betterData.length) {
+            endLearn()
+        } else {
+            $("#round-finished").addClass("grid")
+            $("#round-finished").removeClass("hidden")
+        }
+    }
+
+    saveData() {
+        let formData = new FormData()
+
+        formData.append('length', betterData.length)
+
+        for (let i = 0; i < betterData.length; i++) {
+            const card = betterData[i];
+
+            formData.append(`${i}-id`, card.id)
+            formData.append(`${i}-term`, card.term)
+            formData.append(`${i}-definition`, card.definition)
+            formData.append(`${i}-mastery`, card.mastery)
+
+        }
+
+        fetch(`/study/decks/${deckID}/learn/save`, {
+            method: "post",
+            body: formData
+        });
+    }
+
+    
 
     sample(data) {
         let generator = randomNoRepeats(
-            data.filter(c => c[2] < 2)
+            data.filter(c => c["mastery"] < 2)
         )
         let output = []
-        for (let i = 0; i < Math.min(data.length, BATCH_SIZE); i++) {
+        for (let i = 0; i < Math.min(data.length - this.masteryCount(2), BATCH_SIZE); i++) {
             output.push(generator())
         }
         return output
@@ -183,6 +220,11 @@ $("#choiceD").click(function(){
 
 
 function startRound() {
+    currentBatch = new Batch(betterData)
+    if (currentBatch.masteryCount(2) >= betterData.length) {
+        endLearn()
+        return
+    }
     $("#learn-main").removeClass("hidden")
     $("#learn-main").addClass("flex")
     $("#landing").addClass("hidden")
@@ -190,8 +232,18 @@ function startRound() {
     $("#round-finished").addClass("hidden")
     $("#round-finished").removeClass("flex")
     $("#answerField").focus()
-    currentBatch = new Batch(betterData)
     currentBatch.nextCard()
+}
+
+function endLearn() {
+    $("#learn-main").removeClass("flex")
+    $("#learn-main").addClass("hidden")
+
+    $("#learn-finished").addClass("flex")
+    $("#learn-finished").removeClass("hidden")
+
+    $("#landing").removeClass("grid")
+    $("#landing").addClass("hidden")
 }
 
 $("#startButton").click(startRound)

@@ -98,7 +98,12 @@
         
         <div class="flex justify-between mb-4">
             <h1 class="text-3xl">{{deck.name}}: Learn</h1>
-            <a href='../{{deck.id}}' class="transition ease-in-out delay-150 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer text-center">Back</a>
+            <form action="/study/decks/{{deck.id}}/learn/reset" method="post" class="justify-end">
+                <button type="submit self-center">
+                    <img src="{{ url_for('static',filename='imgs/refresh_symbol.svg') }}" alt="" class="w-6 mr-3">
+                </button>
+                <a href='../{{deck.id}}' class="transition ease-in-out delay-150 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer text-center">Back</a>
+            </form>
         </div>
         <hr class="border-black mb-12">
 
@@ -111,9 +116,9 @@
         
         <div id="round-finished" class="hidden w-full px-8 self-center flex-col grid-cols-2 gap-4">
             <p class="text-xl mb-4"><span id="correctCount" class="text-3xl px-2">3</span> / <span id="batchCount" class="text-3xl px-2">7</span> questions correct this round.</p>
-            <p class="text-xl mb-4 col-start-2"><span id="questionCount" class="text-3xl px-2">17</span> questions total.</p>
-            <p class="text-xl mb-4 col-start-2"><span id="masteredCount" class="text-3xl px-2">6</span> questions mastered.</p>
-            <p class="text-xl mb-4 col-start-2"><span id="toGoCount" class="text-3xl px-2">11</span> questions to go.</p>
+            <p class="text-xl mb-4 col-start-2"><span id="unknownCount" class="text-3xl px-2">17</span> questions unknown.</p>
+            <p class="text-xl mb-4 col-start-2"><span id="learnedCount" class="text-3xl px-2">17</span> questions learned.</p>
+            <p class="text-xl mb-4 col-start-2"><span id="masteryCount" class="text-3xl px-2">17</span> questions mastered.</p>
             <button class=" col-span-2 transition ease-in-out delay-150 w-full hover:-translate-y-1 hover:scale-105 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-4 rounded-full font-bold text-white text-center cursor-pointer text-md" id="continueButton">Continue</button>
         </div>
 
@@ -140,15 +145,22 @@
         </div>
 
 
-        
+        <div id="learn-finished" class="hidden self-center w-4/5 gap-8">
+            <p class="text-2xl text-center">Finished Learn</p>
+            <form action="/study/decks/{{deck.id}}/learn/reset" method="post" class="justify-end">
+                <button type="submit" class="transition ease-in-out delay-150 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer text-center">Reset</button>
+            </form>
+            <a href='../{{deck.id}}' class="transition ease-in-out delay-150 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer text-center">Back</a>
+        </div>
 
         
         <script>
             let data = '{{cards}}'
-
+            let deckID = '{{deck.id}}'
         </script>
         <script src="{{ url_for('static',filename='scripts/jquery-3.7.1.min.js') }}"></script>
         <script src="{{ url_for('static',filename='scripts/study/learn.js') }}"></script>
+
     </div>
 </body>
 </html>

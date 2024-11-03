@@ -5,6 +5,9 @@ from sqlalchemy import MetaData, exc
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 import math
+import os
+from flask import send_from_directory
+
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey123'
@@ -40,6 +43,7 @@ class User(UserMixin, db.Model):
 
     tasks = db.relationship('Task', backref='owner', lazy=True)
     decks = db.relationship('StudyDeck', backref='owner', lazy=True)
+    cardTrackers = db.relationship('CardTracker', backref='user', lazy=True)
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -78,11 +82,21 @@ class StudyCard(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     term = db.Column(db.String(200), nullable=False)
     definition = db.Column(db.String(500), nullable=False)
-    mastery_level = db.Column(db.Integer, default=0)
 
     deck_id = db.Column(db.Integer, db.ForeignKey('study_deck.id'), nullable=False)
+    
+    trackers = db.relationship('CardTracker', backref='card', lazy=True)
 
     
+
+class CardTracker(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    card_id = db.Column(db.Integer, db.ForeignKey('study_card.id'), nullable=False)
+
+    mastery_level = db.Column(db.Integer, nullable=False)
+
 
 
 @login_manager.user_loader
@@ -92,6 +106,8 @@ def load_user(user_id):
 
 with app.app_context():
     db.create_all()
+
+
 
 
 @app.route('/')
@@ -268,10 +284,52 @@ def flashcards(id):
 @login_required
 def learn(id):
     deck = db.session.execute(db.select(StudyDeck).filter_by(id=id)).scalar()
-    cards = '[' + ','.join([f'[{"'"+card.term+"'"}, {"'"+card.definition+"'"}, {card.mastery_level}, {card.id}]' for card in deck.cards]) + ']'
+
+    out = '['
+    for card in deck.cards:
+        mastery_level = 0
+        out += f'{{"id":{card.id},"term":"{card.term}","definition":"{card.definition}","mastery":{mastery_level}}},'
+        pass
+    out = out[:-1]
+    out += ']'
+
+    cards = out
+
     return render_template(f'study/learn.html', deck=deck, cards=cards)
 
+@app.route('/study/decks/<int:id>/learn/save', methods=['POST'])
+@login_required
+def save_learn(id):
+    print("SAVING LEARN")
+    for i in range(int(request.form['length'])):
+        card_id = int(request.form[f"{i}-id"])
+        card = db.session.get(StudyCard, card_id)
 
+        mastery = request.form[f'{i}-mastery']
+        
+        card_trackers = db.session.execute(db.select(CardTracker).filter_by(user=current_user, card=card)).scalar()
+        if not card_trackers:
+            new_tracker = CardTracker(user_id=current_user.id, card_id = card.id, mastery_level=mastery)
+            db.session.add(new_tracker)
+        else:
+            card_trackers.mastery_level = mastery
+    
+    db.session.commit()
+    print('--\n')
+    return redirect(f'/study/decks/{id}/learn')
+
+
+@app.route('/study/decks/<int:id>/learn/reset', methods=['POST'])
+@login_required
+def reset_learn(id):
+    cards = db.session.execute(db.select(StudyCard).filter_by(deck_id=id)).scalars().all()
+    for card in cards:
+        card_tracker = db.session.execute(db.select(CardTracker).filter_by(user=current_user, card=card)).scalar()
+        card_tracker.mastery_level = 0
+    db.session.commit()
+    return redirect(f'/study/decks/{id}/learn')
+
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
