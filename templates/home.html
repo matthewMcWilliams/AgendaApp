@@ -8,8 +8,18 @@
 </head>
 <body>
     
-    <h1 class="text-5xl text-center mt-10 mb-32">Welcome to the task manager app!</h1>
-    <p class="text-center mb-20">This is the home page, by the way.</p>
-    <a href="/login" class="bg-orange-200 p-5 w-96 block text-center mx-auto">Login</a>
+    <div class="grid grid-cols-2 h-screen content-stretch">
+        <div class="bg-eerie-black-900 text-white pt-24 px-16">
+            <h1 class="text-6xl text-center mt-10 mb-8 leading-relaxed">Welcome to Assignment HQ</h1>
+            <hr class="mx-32 mb-16">
+            <p class="text-center text-lg px-32">Your all-in-one stop for studying and staying organized this school year.</p>
+        </div>
+        <div class="flex flex-col justify-center">
+            <h2 class="text-center text-2xl mb-6">Let's Get You Started, Shall We?</h2>
+            <hr class="mb-6 h-1 bg-eerie-black-900 rounded-full mx-48">
+            <a href="/login" class="bg-persian-red-600 text-white font-bold rounded p-5 w-96 block text-center mx-auto mb-4 text-lg hover:ring-4 hover:bg-persian-red-500 hover:ring-persian-red-500 hover:text-white transition ease-in-out delay-150 duration-300">Login</a>
+            <a href="/signup" class="bg-persian-red-600 text-white font-bold rounded p-5 w-96 block text-center mx-auto mb-4 text-lg hover:ring-4 hover:bg-persian-red-500 hover:ring-persian-red-500 hover:text-white transition ease-in-out delay-150 duration-300">Signup</a>
+        </div>
+    </div>
 </body>
 </html>

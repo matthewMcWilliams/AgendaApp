@@ -120,7 +120,7 @@ def login():
     if request.method == 'POST':
         user_id = request.form['username']
         password = request.form['password']
-        user = db.session.execute(db.select(User).filter_by(username=user_id)).scalar_one()
+        user = db.session.execute(db.select(User).filter_by(username=user_id)).scalar_one_or_none()
 
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
@@ -129,6 +129,30 @@ def login():
             flash('Invalid username or password.')
 
     return render_template('login.html')
+
+
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        user_id = request.form['username']
+        password = request.form['password']
+        password_confirm = request.form['passwordconf']
+        user = db.session.execute(db.select(User).filter_by(username=user_id)).scalar_one_or_none()
+
+        if user and check_password_hash(user.password_hash, password):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        elif user:
+            flash('Username already taken.')
+        elif password_confirm == password:
+            new_user = User(username=user_id, password_hash=generate_password_hash(password))
+            db.session.add(new_user)
+            db.session.commit()
+            login_user(new_user)
+            return redirect(url_for('dashboard'))
+
+    return render_template('signup.html')
 
 
 @app.route('/logout')
@@ -300,7 +324,6 @@ def learn(id):
 @app.route('/study/decks/<int:id>/learn/save', methods=['POST'])
 @login_required
 def save_learn(id):
-    print("SAVING LEARN")
     for i in range(int(request.form['length'])):
         card_id = int(request.form[f"{i}-id"])
         card = db.session.get(StudyCard, card_id)
@@ -329,7 +352,51 @@ def reset_learn(id):
     db.session.commit()
     return redirect(f'/study/decks/{id}/learn')
 
-    
+
+@app.route('/study/decks/<int:id>/play', methods=['GET'])
+@login_required
+def play(id):
+    deck = db.session.execute(db.select(StudyDeck).filter_by(id=id)).scalar()
+
+    out = '['
+    for card in deck.cards:
+        mastery_level = 0
+        out += f'{{"id":{card.id},"term":"{card.term}","definition":"{card.definition}","mastery":{mastery_level}}},'
+        pass
+    out = out[:-1]
+    out += ']'
+
+    cards = out
+
+    return render_template(f'study/play/play.html', deck=deck, cards=cards)
+
+
+@app.route('/study/decks/<int:id>/ajax_info.txt', methods=['GET'])
+@login_required
+def debug_text(id):
+    return render_template('study/play/ajax_info.txt')
+
+
+
+@app.route('/study/decks/<int:id>/play/tower-defense', methods=['GET'])
+@login_required
+def tower_defense(id):
+    deck = db.session.execute(db.select(StudyDeck).filter_by(id=id)).scalar()
+
+    out = '['
+    for card in deck.cards:
+        mastery_level = 0
+        out += f'{{"id":{card.id},"term":"{card.term}","definition":"{card.definition}","mastery":{mastery_level}}},'
+        pass
+    out = out[:-1]
+    out += ']'
+
+    cards = out
+
+    return render_template(f'study/play/tower-defense.html', deck=deck, cards=cards)
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

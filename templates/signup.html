@@ -18,14 +18,17 @@
             {% endif %}
         {% endwith %}
 
-        <h1 class="text-center text-3xl mb-4">Glad to see you back.</h1>
-        <p class="text-center mb-8">This is the login page.</p>
-        <form action="/login" method="post" class="grid grid-cols-3 items-center gap-4">
+        <h1 class="text-center text-3xl mb-4">Nice to meet you.</h1>
+        <p class="text-center mb-8">I guess.</p>
+        <form action="/signup" method="post" class="grid grid-cols-3 items-center gap-4">
             <label for="">Username</label>
             <input type="text" name='username' class="py-4 px-12 col-span-2 rounded-full">
 
             <label for="">Password</label>
             <input type="password" name='password' class="py-4 px-12 col-span-2 rounded-full">
+
+            <label for="">Confirm</label>
+            <input type="password" name='passwordconf' class="py-4 px-12 col-span-2 rounded-full">
 
             <button type="submit" class="bg-persian-red-600 hover:bg-persian-red-500 rounded-full font-bold border-2 border-white col-span-3 py-4 my-4">Login!</button>
         </form>
