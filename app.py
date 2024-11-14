@@ -7,10 +7,14 @@ from flask_migrate import Migrate
 import math
 import os
 from flask import send_from_directory
+from flask_socketio import SocketIO, emit
+import threading
 
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey123'
+
+socketio = SocketIO(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assignmenthq.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # To suppress warnings
@@ -96,6 +100,51 @@ class CardTracker(db.Model):
     card_id = db.Column(db.Integer, db.ForeignKey('study_card.id'), nullable=False)
 
     mastery_level = db.Column(db.Integer, nullable=False)
+
+
+
+
+class GameState():
+    
+    map1 = [
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -2, -3, -4, -5, -6, -7, -8, -9, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1,-10, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1,-11, -1, -1],
+        [-19,-18,-17,-16,-15,-14,-13,-12, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+    ]     
+
+    map2 = [
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -2, -3, -4, -5, -6, -7, -8, -9, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1,-10, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1,-11, -1, -1],
+        [-19,-18,-17,-16,-15,-14,-13,-12, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+        [ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+    ]    
+
+
+    player1 = None
+    player2 = None
+
+
+
+gameState = GameState()
+
+
+
+
+
+
 
 
 
@@ -234,7 +283,7 @@ def sort():
     elif discriminator == 'status':
         key= (lambda x: x.status)
     else:
-        print(discriminator)
+        print('discriminator not found:  ' + discriminator)
     tasks = db.session.execute(db.select(Task).filter_by(user_id=current_user.id))
     new_order = sorted([t[0] for t in tasks], key=key)
     for task in new_order:
@@ -338,7 +387,6 @@ def save_learn(id):
             card_trackers.mastery_level = mastery
     
     db.session.commit()
-    print('--\n')
     return redirect(f'/study/decks/{id}/learn')
 
 
@@ -395,6 +443,48 @@ def tower_defense(id):
 
     return render_template(f'study/play/tower-defense.html', deck=deck, cards=cards)
 
+
+
+
+
+
+@socketio.on('connect')
+def handle_connect():
+    if gameState.player1 is None:
+        gameState.player1 = request.sid
+    elif gameState.player2 is None:
+        gameState.player2 = request.sid
+    else:
+        print('Lobby full')
+
+    # Emit a single dictionary containing both map1 and map2
+    emit('game_state', {'map1': gameState.map1, 'map2': gameState.map2})
+    emit('player_id', {'id': 1 if gameState.player1 == request.sid else 2 if gameState.player2 == request.sid else -1})
+
+
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    if gameState.player1 == request.sid:
+        gameState.player1 = None
+    elif gameState.player2 == request.sid:
+        gameState.player2 = None
+
+
+
+@socketio.on('place_building')
+def place_building(data):
+    x = data.get('x')
+    y = data.get('y')
+    building = data.get('building')
+
+    if request.sid == gameState.player1:
+        gameState.map1[y][x] = building
+    elif request.sid == gameState.player2:
+        gameState.map2[y][x] = building
+
+    emit('game_state', {'map1': gameState.map1, 'map2': gameState.map2}, broadcast=True)
 
 
 
