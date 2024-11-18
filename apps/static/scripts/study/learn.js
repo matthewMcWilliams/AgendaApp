@@ -107,7 +107,7 @@ class Batch {
             this.currentCard["mastery"] = 0
         }
         
-        $("#displayCardBack").text(this.currentCard["term"])
+        $("#displayCardBack").text(this.currentCard['definition'] + '  ➡  ' + this.currentCard["term"])
         $("#flip-card").addClass("flipped")
 
         this.transitioning = true
@@ -122,7 +122,7 @@ class Batch {
             } else {
                 currentBatch.finishRound()
             }
-        }, 1000)
+        }, 2500)
     }
 
     finishRound() {
