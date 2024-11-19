@@ -30,12 +30,17 @@ socket.emit('create_lobby', {
 let gameCode = 'WAITING'
 let playerList = []
 
+let isHost = false
 
 socket.on('room_update', ({ _mode, players, code, _deckId }) => {
     gameCode = code;
     console.log(players);
     playerList = players;
 }); 
+
+socket.on('set_host', () => {
+    isHost = true
+})
 
 
 socket.on('start_game', () => {
@@ -112,26 +117,88 @@ class Button {
 class Map {
     constructor() {
         this.map = [
+            [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 1, 1, 1, 1, 1],
             [0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 1, 1, 1, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 1, 1, 1, 1, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ]
+
+        this.buildings = [
+            {'type':'turret','color':'blue','x':3,'y':5}
+        ]
+    }
+
+    render(x_0, y_0, w, h) {
+        for (let i = 0; i < this.map.length; i++) {
+            const list = this.map[i];
+            for (let j = 0; j < list.length; j++) {
+                const tileID = list[j];
+                
+                // get color
+                switch (tileID) {
+                    case 0:
+                        ctx.fillStyle = 'green'
+                        break;
+                    case 1:
+                        ctx.fillStyle = 'yellow'
+                    default:
+                        break;
+                }
+                ctx.strokeStyle = 'black'
+                ctx.lineWidth = 0.2
+
+                // draw rect
+                let x = x_0 + j * w/10
+                let y = y_0 + i * w/10
+                ctx.fillRect(x, y, w/10, h/10)
+                ctx.strokeRect(x, y, w/10, h/10)
+            }
+        }
+
+        this.buildings.forEach(({type, color, x, y}) => {
+            ctx.fillStyle = color
+            ctx.beginPath()
+            ctx.arc(x_0+x*w/10+w/20, y_0+y*w/10+w/20, w/20, 0, 2*Math.PI)
+            ctx.fill()
+        })
     }
 }
 
 
-let myMap = new Map()
-let hisMap = new Map()
+let hostMap = new Map()
+let clientMap = new Map()
 
 
 const startGameButton = new Button(canvas.width/3, canvas.height*2/3, canvas.width/3, 40, 'red')
+
+
+function drawLayout() {
+    // Outline
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(0, 0, canvas.width, canvas.height)
+    
+    // Render purchase section
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(0, canvas.height*3/4, canvas.width, canvas.height/4)
+
+    // Render left half
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(0, 0, canvas.width/2-20, canvas.height*3/4)
+    
+    // Render right half
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(canvas.width/2+20, 0, canvas.width/2-20, canvas.height*3/4)
+}
 
 
 function drawLobby() {
@@ -149,42 +216,27 @@ function drawLobby() {
         const player = nicknameList[i];
         ctx.fillText(player, canvas.width / 4, canvas.height / 2 + i * 24)
     }
+    
+    if (isHost) {
+        startGameButton.render()
+        
+        ctx.fillStyle = 'white'
+        ctx.fillText('Start Game ➡', canvas.width/2, canvas.height*2/3+30)
+    }
 
-    startGameButton.render()
-
-    ctx.fillStyle = 'white'
-    ctx.fillText('Start Game ➡', canvas.width/2, canvas.height*2/3+30)
 
     if (startGameButton.clicked) {
         socket.emit('td-start_game', gameCode)
     }
 }
 
-
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Outline
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'black'
-    ctx.strokeRect(0, 0, canvas.width, canvas.height)
-    
-    // Render purchase section
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'black'
-    ctx.strokeRect(0, canvas.height*3/4, canvas.width, canvas.height/4)
+    drawLayout()
 
-    // Render left half
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'black'
-    ctx.strokeRect(0, 0, canvas.width/2-20, canvas.height*3/4)
-    renderMap(myMap, 1)
-    
-    // Render right half
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'black'
-    ctx.strokeRect(canvas.width/2+20, 0, canvas.width/2-20, canvas.height*3/4)
-    renderMap(oppMap, 2)
+    hostMap.render(45, 10, canvas.height*3/4-20, canvas.height*3/4-20)
+    clientMap.render(canvas.width/2+20+45, 10, canvas.height*3/4-20, canvas.height*3/4-20)
 }
 
 

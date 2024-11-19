@@ -55,6 +55,8 @@ def create_lobby(data):
             'deck-id': data['deck-id']
         }
 
+        emit('set_host')
+
         lobbies.append(lobby)
 
     room = f'game_{code}'
