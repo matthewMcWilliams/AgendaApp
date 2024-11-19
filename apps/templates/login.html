@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/output.css') }}">
+    <title>Task Manager App | Login</title>
+</head>
+<body class="bg-eerie-black-300 absolute inset-0 bg-[linear-gradient(45deg,#ffffff33_12%,transparent_12%,transparent_88%,#ffffff33_88%),linear-gradient(-45deg,#ffffff33_12%,transparent_12%,transparent_88%,#ffffff33_88%),linear-gradient(45deg,#ffffff33_12%,transparent_12%,transparent_88%,#ffffff33_88%),linear-gradient(-45deg,#ffffff33_12%,transparent_12%,transparent_88%,#ffffff33_88%)] bg-[size:40px_40px] bg-[position:0_0,0_0,20px_20px,20px_20px]">
+    <div class="my-24 mx-auto w-1/3 pt-16 pb-8 px-8 flex flex-col items-center bg-eerie-black-900 rounded-3xl text-white font-bold">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class='bg-red-200 p-5 mb-5'>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <h1 class="text-center text-3xl mb-4">Glad to see you back.</h1>
+        <p class="text-center mb-8">This is the login page.</p>
+        <form action="/login" method="post" class="grid grid-cols-3 items-center gap-4">
+            <label for="">Username</label>
+            <input type="text" name='username' class="py-4 px-12 col-span-2 rounded-full">
+
+            <label for="">Password</label>
+            <input type="password" name='password' class="py-4 px-12 col-span-2 rounded-full">
+
+            <button type="submit" class="bg-persian-red-600 hover:bg-persian-red-500 rounded-full font-bold border-2 border-white col-span-3 py-4 my-4">Login!</button>
+        </form>
+    </div>
+</body>
+</html>

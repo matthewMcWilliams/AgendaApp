@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/output.css') }}">
+
+
+
+    <title>Assignment HQ | Dashboard</title>
+</head>
+<body class="grid grid-cols-[25%_75%] h-screen">
+
+
+    <div id="sidebar" class="bg-eerie-black-900 flex flex-col h-screen content-between text-white">
+
+        <a href="/"><img src="{{ url_for('static', filename='imgs/logo.svg')}}" alt="Assignment HQ Logo" class=" border-white  border-3 px-6 my-8 self-center"></a>
+
+        <div class="flex flex-col text-right text-xl h-full space-between">
+            <div class="flex flex-col text-right px-8 text-xl h-full">
+                <a href="/dashboard" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-eerie-black-700 py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/dashboardLogo.svg') }}" alt="" class="h-6 ml-2 invert">
+                    <div class="h-4 px-3">Dashboard</div>
+                </a>
+
+                <a href='/study' class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-eerie-black-700 py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/studyLogo.svg') }}" alt="" class="h-6 ml-2 invert">
+                    <div class="h-4 px-3">Study</div>
+                </a>
+                
+                <a href="/clause" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-eerie-black-700 py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/aiCrab.svg') }}" alt="" class="h-6 ml-2 invert">
+                    <div class="h-4 px-3">AI Study Buddy</div>
+                </a>
+                
+                <a href="/chat" class="grid grid-cols-[15%_65%] gap-8 cursor-pointer hover:bg-eerie-black-700 py-6 px-4 rounded-full">
+                    <img src="{{ url_for('static',filename='imgs/classChat.svg') }}" alt="" class="h-6 ml-2 invert">
+                    <div class="h-4 px-3">Class Chat</div>
+                </a>
+            </div>
+
+            <a href="/logout" class="hover:bg-eerie-black-700 text-center mt-full p-4 rounded-full mb-8 mx-8">Logout</a>
+        </div>
+
+    </div>
+
+
+
+
+    <div id="main" class="flex flex-col bg-white min-h-screen px-20 py-20 overflow-y-scroll">
+
+        <div class="flex justify-between mb-4">
+            <h1 class="text-3xl">{{deck.name}}: Play</h1>
+            <form action="/study/decks/{{deck.id}}/learn/reset" method="post" class="justify-end">
+                <a href='../{{deck.id}}' class="transition ease-in-out delay-150 bg-persian-red-600 hover:bg-persian-red-400 px-8 py-3 rounded-full font-bold text-white cursor-pointer text-center">Back</a>
+            </form>
+        </div>
+        <hr class="border-black mb-12">
+        
+        <div class="grid grid-cols-2 gap-8">
+
+            <a href="/study/decks/{{deck.id}}/play/tower-defense" class="bg-eerie-black-200 flex flex-col rounded-2xl shadow-md cursor-pointer hover:shadow-lg">
+                <div class="h-44 rounded-t-xl bg-light-blue-500"></div>
+                <p class="p-6 font-semibold text-lg">Tower Defense</p>
+            </a>
+
+            <a class="bg-eerie-black-200 flex flex-col rounded-2xl shadow-md cursor-pointer hover:shadow-lg">
+                <div class="h-44 rounded-t-xl bg-sunglow-600"></div>
+                <p class="p-6 font-semibold text-lg">Clash Royale</p>
+            </a>
+        </div>
+
+    </div>
+</body>
+</html>
+

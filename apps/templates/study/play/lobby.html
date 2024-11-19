@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/output.css') }}">
+    <script src="{{ url_for('static',filename='scripts/socket.io.min.js') }}"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Game</title>
+</head>
+<body>
+    
+    <form class="min-w-screen min-h-screen grid" id="joinForm">
+
+        <div type="text" class='place-self-center border-2 px-64 py-12 rounded-full'>
+            <input type="number" id="codeInput" class="block text-center border-black border-2 py-3 px-6 text-3xl w-72 rounded-full tracking-widest" placeholder="Game Code" autofocus>
+            <input type="text" id="nickname" class="block mt-6 text-center border-black border-2 py-3 px-6 text-3xl w-72 rounded-full tracking-widest" placeholder="Nickname" autofocus>
+            <button type="submit" class="block text-center w-full text-3xl bg-eerie-black-900 rounded-full mt-6 py-3 px-6 text-white font-bold">Join</button>
+        </div>
+
+    </form>
+
+    <script src="{{ url_for('static',filename='scripts/lobby.js') }}"></script>
+
+</body>
+</html>
