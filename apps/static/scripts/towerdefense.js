@@ -6,7 +6,7 @@ const socket = io()
 
 const urlParams = new URLSearchParams(window.location.search);
 
-const code = urlParams.get("code");
+const urlCode = urlParams.get("code");
 const nickname = urlParams.get('nickname')
 
 
@@ -23,7 +23,7 @@ let state = State.LOBBY
 socket.emit('create_lobby', {
     'mode':'tower-defense',
     'deck-id':deckId,
-    'code': code ?? -1,
+    'code': urlCode ?? -1,
     'nickname': nickname ?? my_username
 })
 
@@ -36,6 +36,12 @@ socket.on('room_update', ({ _mode, players, code, _deckId }) => {
     console.log(players);
     playerList = players;
 }); 
+
+
+socket.on('start_game', () => {
+    console.log('starting game.')
+    state = State.GAME
+})
 
 
 
@@ -128,7 +134,7 @@ function drawLobby() {
     ctx.fillText('Start Game ➡', canvas.width/2, canvas.height*2/3+30)
 
     if (startGameButton.clicked) {
-        state = State.GAME
+        socket.emit('td-start_game', gameCode)
     }
 }
 

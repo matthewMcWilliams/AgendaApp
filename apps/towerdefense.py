@@ -11,3 +11,10 @@ towerdefense_bp = Blueprint('towerdefense', __name__)
 @login_required
 def tower_defense(id):
     return render_template('study/play/tower-defense.html', deckId=id, username=current_user.username)
+
+
+
+@socketio.on('td-start_game')
+def start_game(room):
+    print('starting game', room)
+    emit('start_game', room=f'game_{room}')
