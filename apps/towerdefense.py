@@ -16,5 +16,4 @@ def tower_defense(id):
 
 @socketio.on('td-start_game')
 def start_game(room):
-    print('starting game', room)
     emit('start_game', room=f'game_{room}')

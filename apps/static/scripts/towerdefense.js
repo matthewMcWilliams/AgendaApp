@@ -109,6 +109,28 @@ class Button {
 }
 
 
+class Map {
+    constructor() {
+        this.map = [
+            [0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 1, 1, 1, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+    }
+}
+
+
+let myMap = new Map()
+let hisMap = new Map()
+
+
 const startGameButton = new Button(canvas.width/3, canvas.height*2/3, canvas.width/3, 40, 'red')
 
 
@@ -138,9 +160,31 @@ function drawLobby() {
     }
 }
 
+
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    console.log('Playing game!')
+    
+    // Outline
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(0, 0, canvas.width, canvas.height)
+    
+    // Render purchase section
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(0, canvas.height*3/4, canvas.width, canvas.height/4)
+
+    // Render left half
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(0, 0, canvas.width/2-20, canvas.height*3/4)
+    renderMap(myMap, 1)
+    
+    // Render right half
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black'
+    ctx.strokeRect(canvas.width/2+20, 0, canvas.width/2-20, canvas.height*3/4)
+    renderMap(oppMap, 2)
 }
 
 
