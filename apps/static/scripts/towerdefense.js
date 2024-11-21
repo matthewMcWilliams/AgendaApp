@@ -33,7 +33,6 @@ let playerList = []
 
 socket.on('room_update', ({ _mode, players, code, _deckId }) => {
     gameCode = code;
-    console.log(players);
     playerList = players;
 }); 
 
@@ -75,6 +74,12 @@ function setCursorNormal() {
     canvas.classList.remove('cursor-pointer')
 }
 
+function drawCircle(x, y, r, c) {
+    ctx.fillStyle = c
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, 2*Math.PI)
+    ctx.fill()
+}
 
 
 
@@ -155,7 +160,7 @@ function drawLobby() {
     ctx.fillStyle = 'white'
     ctx.fillText('Start Game ➡', canvas.width/2, canvas.height*2/3+30)
 
-    if (startGameButton.clicked) {
+    if (isHost && startGameButton.clicked) {
         socket.emit('td-start_game', gameCode)
     }
 }
