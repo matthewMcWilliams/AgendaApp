@@ -34,7 +34,6 @@ let isHost = false
 
 socket.on('room_update', ({ _mode, players, code, _deckId }) => {
     gameCode = code;
-    console.log(players);
     playerList = players;
 }); 
 
@@ -80,6 +79,12 @@ function setCursorNormal() {
     canvas.classList.remove('cursor-pointer')
 }
 
+function drawCircle(x, y, r, c) {
+    ctx.fillStyle = c
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, 2*Math.PI)
+    ctx.fill()
+}
 
 
 
@@ -162,14 +167,35 @@ class Map {
         }
 
         this.buildings.forEach(({type, color, x, y}) => {
-            ctx.fillStyle = color
-            ctx.beginPath()
-            ctx.arc(x_0+x*w/10+w/20, y_0+y*w/10+w/20, w/20, 0, 2*Math.PI)
-            ctx.fill()
+            drawCircle(x_0+x*w/10+w/20, y_0+y*w/10+w/20, w/20, color)
         })
     }
 }
 
+
+
+const towers = [
+    {
+        name:'turbit',
+        cost: 2,
+        color: 'blue',
+        button: new Button(1,2,3,4,'blue')
+    },
+    {
+        name: 'magnified laser',
+        cost: 6,
+        color: 'red',
+        button: new Button(1,2,3,4,'red')
+    },
+    {
+        name: 'railgun',
+        cost: 10,
+        color: 'grey',
+        button: new Button(1,2,3,4,'grey')
+    }
+]
+
+let selectedTower = null
 
 let hostMap = new Map()
 let clientMap = new Map()
@@ -201,6 +227,35 @@ function drawLayout() {
 }
 
 
+function drawPurchaseArea() {
+
+    for (let i = 0; i < towers.length; i++) {
+        const tower = towers[i];
+        
+        drawCircle(200+i*100, canvas.height-50, 35, tower.color)
+
+        tower.button.x = 200 + i * 100 - 35
+        tower.button.y = canvas.height - 50 - 35
+        tower.button.width = 70
+        tower.button.height = 70
+
+        if (tower.button.clicked) {
+            selectedTower = tower
+        }
+
+        if (selectedTower == tower) {
+            ctx.font = 'bold 12px Arial'
+            ctx.textAlign = 'center'
+
+            ctx.fillStyle = 'black'
+            ctx.fillText(tower.name, 700, 330)
+            ctx.fillText(`Cost: ${tower.cost} coins`, 700, 360)
+        }
+    }
+
+}
+
+
 function drawLobby() {
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -219,13 +274,13 @@ function drawLobby() {
     
     if (isHost) {
         startGameButton.render()
-        
+
         ctx.fillStyle = 'white'
         ctx.fillText('Start Game ➡', canvas.width/2, canvas.height*2/3+30)
     }
 
 
-    if (startGameButton.clicked) {
+    if (isHost && startGameButton.clicked) {
         socket.emit('td-start_game', gameCode)
     }
 }
@@ -236,7 +291,10 @@ function drawGame() {
     drawLayout()
 
     hostMap.render(45, 10, canvas.height*3/4-20, canvas.height*3/4-20)
+
     clientMap.render(canvas.width/2+20+45, 10, canvas.height*3/4-20, canvas.height*3/4-20)
+
+    drawPurchaseArea()
 }
 
 
