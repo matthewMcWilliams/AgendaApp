@@ -41,10 +41,16 @@ socket.on('set_host', () => {
     isHost = true
 })
 
+let hostMap, clientMap, myMap
 
 socket.on('start_game', () => {
     console.log('starting game.')
     state = State.GAME
+
+    hostMap = new Map()
+    clientMap = new Map()
+
+    myMap = isHost ? hostMap : clientMap
 })
 
 
@@ -135,11 +141,11 @@ class Map {
         ]
 
         this.buildings = [
-            {'type':'turret','color':'blue','x':3,'y':5}
+            {'name':'turbit','color':'blue','x':3,'y':5}
         ]
     }
 
-    render(x_0, y_0, w, h) {
+    render(x_0, y_0, s) {
         for (let i = 0; i < this.map.length; i++) {
             const list = this.map[i];
             for (let j = 0; j < list.length; j++) {
@@ -159,16 +165,30 @@ class Map {
                 ctx.lineWidth = 0.2
 
                 // draw rect
-                let x = x_0 + j * w/10
-                let y = y_0 + i * w/10
-                ctx.fillRect(x, y, w/10, h/10)
-                ctx.strokeRect(x, y, w/10, h/10)
+                let x = x_0 + j * s/10
+                let y = y_0 + i * s/10
+                ctx.fillRect(x, y, s/10, s/10)
+                ctx.strokeRect(x, y, s/10, s/10)
             }
         }
 
         this.buildings.forEach(({type, color, x, y}) => {
-            drawCircle(x_0+x*w/10+w/20, y_0+y*w/10+w/20, w/20, color)
+            drawCircle(x_0+x*s/10+s/20, y_0+y*s/10+s/20, s/20, color)
         })
+    }
+
+
+    clicked(x_0, y_0, s) {
+
+        let x_block = Math.floor((mouseX - x_0) / (s/10))
+        let y_block = Math.floor((mouseY - y_0) / (s/10))
+
+        return (
+            mouseDown &&
+            mouseX < x_0 + s && mouseX > x_0 &&
+            mouseY < y_0 + s && mouseY > y_0
+        ) ? [x_block, y_block] : false
+
     }
 }
 
@@ -197,11 +217,25 @@ const towers = [
 
 let selectedTower = null
 
-let hostMap = new Map()
-let clientMap = new Map()
 
 
 const startGameButton = new Button(canvas.width/3, canvas.height*2/3, canvas.width/3, 40, 'red')
+
+
+function placeBuilding(x, y) {
+
+    myMap.buildings.push(
+        {
+            name: selectedTower.name,
+            color: selectedTower.color,
+            x: x,
+            y: y
+        }
+    )
+
+    selectedTower = null
+
+}
 
 
 function drawLayout() {
@@ -250,9 +284,21 @@ function drawPurchaseArea() {
             ctx.fillStyle = 'black'
             ctx.fillText(tower.name, 700, 330)
             ctx.fillText(`Cost: ${tower.cost} coins`, 700, 360)
+
+            drawCircle(mouseX, mouseY, 10, tower.color)
         }
     }
 
+}
+
+
+function checkPlaceBuilding() {
+    if (
+        myMap.clicked(isHost?45:canvas.width/2+20+45, 10, canvas.height*3/4-20) != false 
+        && selectedTower != null
+    ) {
+        placeBuilding(...myMap.clicked(isHost?45:canvas.width/2+20+45, 10, canvas.height*3/4-20))
+    }
 }
 
 
@@ -290,11 +336,13 @@ function drawGame() {
     
     drawLayout()
 
-    hostMap.render(45, 10, canvas.height*3/4-20, canvas.height*3/4-20)
+    hostMap.render(45, 10, canvas.height*3/4-20)
 
-    clientMap.render(canvas.width/2+20+45, 10, canvas.height*3/4-20, canvas.height*3/4-20)
+    clientMap.render(canvas.width/2+20+45, 10, canvas.height*3/4-20)
 
     drawPurchaseArea()
+
+    checkPlaceBuilding()
 }
 
 
