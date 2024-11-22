@@ -67,13 +67,32 @@ canvas.addEventListener('mousemove', (event) => {
     mouseY = y
 });
 
+canvas.addEventListener('touchmove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    mouseX = x
+    mouseY = y
+})
+
+
 canvas.addEventListener('mousedown', (event) => {
     mouseDown = true;
 });
 
+canvas.addEventListener('touchstart', (event) => {
+    mouseDown = true;
+})
+
+
 canvas.addEventListener('mouseup', () => {
     mouseDown = false;
 });
+
+canvas.addEventListener('touchend', () => {
+    mouseDown = false;
+})
 
 
 
@@ -222,20 +241,19 @@ let selectedTower = null
 const startGameButton = new Button(canvas.width/3, canvas.height*2/3, canvas.width/3, 40, 'red')
 
 
-function placeBuilding(x, y) {
+socket.on('td-place_building', ({map, x, y, tower}) => {
 
-    myMap.buildings.push(
+    targetMap = map == 'host' ? hostMap : clientMap
+
+    targetMap.buildings.push(
         {
-            name: selectedTower.name,
-            color: selectedTower.color,
+            name: tower.name,
+            color: tower.color,
             x: x,
             y: y
         }
     )
-
-    selectedTower = null
-
-}
+})
 
 
 function drawLayout() {
@@ -293,11 +311,17 @@ function drawPurchaseArea() {
 
 
 function checkPlaceBuilding() {
+    mclick = myMap.clicked(isHost?45:canvas.width/2+20+45, 10, canvas.height*3/4-20)
+
+    
     if (
-        myMap.clicked(isHost?45:canvas.width/2+20+45, 10, canvas.height*3/4-20) != false 
+        mclick != false 
         && selectedTower != null
+        && myMap.map[mclick[1]][mclick[0]] == 0
+        && !myMap.buildings.map(building => building.x == mclick[0] && building.y == mclick[1]).includes(true)
     ) {
-        placeBuilding(...myMap.clicked(isHost?45:canvas.width/2+20+45, 10, canvas.height*3/4-20))
+        socket.emit('td-place_building', ...mclick, playerList, selectedTower, gameCode)
+        selectedTower = null
     }
 }
 
