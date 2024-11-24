@@ -45,7 +45,6 @@ socket.on('set_host', () => {
 let hostMap, clientMap, myMap
 
 socket.on('start_game', () => {
-    console.log('starting game.')
     state = State.GAME
 
     hostMap = new Map()
@@ -111,6 +110,9 @@ function drawCircle(x, y, r, c) {
     ctx.arc(x, y, r, 0, 2*Math.PI)
     ctx.fill()
 }
+
+
+let coins = 30
 
 
 
@@ -320,8 +322,10 @@ class Map {
 
 class WaveManager {
     constructor(...waves) {
-        this.waves = waves
-        this.queue = waves[0]
+        this.waves = waves.map(x => x.balloons)
+        this.coinBonuses = waves.map(x => x.coinBonus)
+
+        this.queue = this.waves[0]
 
         this.waveCount = 0
     }
@@ -331,8 +335,11 @@ class WaveManager {
         const noBalloons = hostMap.balloons.length == 0 && clientMap.balloons.length == 0
 
         if (this.queue.length == 0 && noBalloons) {
+            if (this.coinBonuses.length > 0) {
+                socket.emit('td-add_coins', {count:this.coinBonuses[0],room:gameCode})
+                this.coinBonuses.shift()
+            }
             if (this.waves.length > 1) {
-                console.log('Wave Finished. Next Wave.')
                 this.queue = this.waves[1]
                 this.waves.shift()
                 socket.emit('td-update_wave', {wave:this.waveCount+1, room:gameCode})
@@ -370,7 +377,7 @@ class WaveManager {
                     room:gameCode
                 }
             )
-
+            
             this.queue.shift()
         }
     }
@@ -439,28 +446,38 @@ const balloons = [
 let selectedTower = null
 
 let waveManager = new WaveManager(
-    [
-        {time:30,balloonIndex:0},
-        {time:30,balloonIndex:1},
-        {time:30,balloonIndex:1},
-        {time:60,balloonIndex:1},
-        {time:60,balloonIndex:0},
-        {time:30,balloonIndex:0},
-        {time:30,balloonIndex:0}
-    ],
-    [
-        {time:20,balloonIndex:1},
-        {time:20,balloonIndex:1},
-        {time:20,balloonIndex:1},
-        {time:20,balloonIndex:1},
-        {time:20,balloonIndex:1},
-        {time:20,balloonIndex:1},
-        {time:20,balloonIndex:1}
-    ]
+    {
+        balloons:[
+            {time:30,balloonIndex:0},
+            {time:30,balloonIndex:1},
+            {time:30,balloonIndex:1},
+            {time:60,balloonIndex:1},
+            {time:60,balloonIndex:0},
+            {time:30,balloonIndex:0},
+            {time:30,balloonIndex:0}
+        ],
+        coinBonus:10
+    },
+    {
+        balloons:[
+            {time:20,balloonIndex:1},
+            {time:20,balloonIndex:1},
+            {time:20,balloonIndex:1},
+            {time:20,balloonIndex:1},
+            {time:20,balloonIndex:1},
+            {time:20,balloonIndex:1},
+            {time:20,balloonIndex:1}
+        ],
+        coinBonus:20
+    }
 )
 
 const startGameButton = new Button(canvas.width/3, canvas.height*2/3, canvas.width/3, 40, 'red')
 
+socket.on('td-add_coins', ({count, room}) => {
+    coins += count
+    console.log(count)
+})
 
 socket.on('td-update_wave', ({wave, room}) => {
     waveManager.waveCount = wave
@@ -476,7 +493,6 @@ socket.on('td-pop_balloon', ({map, balloonIndex, room}) => {
 socket.on('td-update_health', ({map, newHealth, message, room}) => {
     targetMap = map == 'host' ? hostMap : clientMap
     targetMap.towerHealth = newHealth
-    console.log(message)
 })
 
 
@@ -488,7 +504,6 @@ socket.on('td-balloon_target_change', ({map, balloonIndex, positionIndex}) => {
     if (targetMap.balloons.length <= balloonIndex) {
         return
     }
-    console.log(balloonIndex, positionIndex)
     targetMap = map == 'host' ? hostMap : clientMap
     targetBalloon = targetMap.balloons[balloonIndex]
 
@@ -563,7 +578,7 @@ function drawPurchaseArea() {
         tower.button.width = 70
         tower.button.height = 70
 
-        if (tower.button.clicked) {
+        if (tower.button.clicked && coins >= tower.cost) {
             selectedTower = tower
         }
 
@@ -579,20 +594,38 @@ function drawPurchaseArea() {
         }
     }
 
+    ctx.font = 'bold 24px Arial'; // Bold text
+    ctx.textAlign = 'center'; // Center horizontally
+    ctx.textBaseline = 'middle'; // Center vertically
+    ctx.fillStyle = 'gold'; // Text color
+    ctx.fillText(coins, canvas.width / 2, canvas.height / 2 + 60); // Draw text at center
+    ctx.lineWidth = 0.5; // Border thickness
+    ctx.strokeStyle = 'black'; // Border color
+    ctx.strokeText(coins, canvas.width / 2, canvas.height / 2 + 60); // Draw the border
+
+
+
 }
 
 
 function checkPlaceBuilding() {
     mclick = myMap.clicked(isHost?45:canvas.width/2+20+45, 10, canvas.height*3/4-20)
 
+    if (mclick == false || selectedTower == null) {
+        return
+    }
+
+    let spotEmpty = !myMap.buildings.map(building => building.x == mclick[0] && building.y == mclick[1]).includes(true)
+    let mapIsGrass = myMap.map[mclick[1]][mclick[0]] == 0
+    let hasCoins = selectedTower.cost <= coins
     
     if (
-        mclick != false 
-        && selectedTower != null
-        && myMap.map[mclick[1]][mclick[0]] == 0
-        && !myMap.buildings.map(building => building.x == mclick[0] && building.y == mclick[1]).includes(true)
+        mapIsGrass
+        && spotEmpty
+        && hasCoins
     ) {
         socket.emit('td-place_building', ...mclick, playerList, selectedTower, gameCode)
+        coins -= selectedTower.cost
         selectedTower = null
     }
 }

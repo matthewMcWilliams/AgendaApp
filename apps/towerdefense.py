@@ -76,6 +76,7 @@ def update_health(data):
 def update_wave(data):
     emit('td-update_wave', data, room=f'game_{data['room']}')
 
-@socketio.on('debug')
-def debug(data):
-    print(data)
+@socketio.on('td-add_coins')
+def update_wave(data):
+    emit('td-add_coins', data, room=f'game_{data['room']}')
+
