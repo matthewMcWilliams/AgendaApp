@@ -239,7 +239,12 @@ class Map {
         })
 
         this.balloons.forEach(({x, y, data}) => {
-            drawCircle(x_0+x*s/10+s/20, y_0+y*s/10+s/20, s/30, data.color)
+            drawCircle(
+                x_0+x*s/10+s/20, 
+                y_0+y*s/10+s/20, 
+                s/20 * balloons[data.index].size/100, 
+                balloons[data.index].color
+            )
         })
     }
 
@@ -277,8 +282,8 @@ class Map {
                         'td-update_health',
                         {
                             map: this == hostMap?'host':'client',
-                            newHealth: this.towerHealth - balloon.data.damage,
-                            message: `${balloon.data.color} balloon hit tower`,
+                            newHealth: this.towerHealth - balloons[balloon.data.index].damage,
+                            message: `${balloons[balloon.data.index].color} balloon hit tower`,
                             room: gameCode
                         }
                     )
@@ -291,22 +296,99 @@ class Map {
             } else if (balloon.data.target >= this.balloonPath.length) {
                 // Client
                 balloon.data.target = this.balloonPath.length - 1
+                
             }
-            
+
             let dirX = this.balloonPath[balloon.data.target].x - balloon.x
             let dirY = this.balloonPath[balloon.data.target].y - balloon.y
+            
+            const speed = balloons[balloon.data.index].speed
+            balloon.x += clamp(dirX, -1/60*speed, 1/60*speed)
+            balloon.y += clamp(dirY, -1/60*speed, 1/60*speed)
     
-            balloon.x += clamp(dirX, -1/60*balloon.data.speed, 1/60*balloon.data.speed)
-            balloon.y += clamp(dirY, -1/60*balloon.data.speed, 1/60*balloon.data.speed)
-    
-            if (Math.abs(dirX) < 1/60*balloon.data.speed 
-                    && Math.abs(dirY) < 1/60*balloon.data.speed) {
+            if (Math.abs(dirX) < 1/60*speed 
+                    && Math.abs(dirY) < 1/60*speed) {
                 balloon.data.target++
-                if (isHost) {
+                if (isHost && balloon.data.target < this.balloonPath.length-1) {
                     socket.emit('td-balloon_target_change', {balloon:i, position: balloon.data.target-1, room:gameCode, map:this==hostMap?'host':'client'})
                 }
             }
         }
+    }
+}
+
+
+class WaveManager {
+    constructor(...waves) {
+        this.waves = waves
+        this.queue = waves[0]
+
+        this.waveCount = 0
+    }
+
+    update() {
+
+        const noBalloons = hostMap.balloons.length == 0 && clientMap.balloons.length == 0
+
+        if (this.queue.length == 0 && noBalloons) {
+            if (this.waves.length > 1) {
+                console.log('Wave Finished. Next Wave.')
+                this.queue = this.waves[1]
+                this.waves.shift()
+                socket.emit('td-update_wave', {wave:this.waveCount+1, room:gameCode})
+            } else {
+                console.log('Wave finished. No more waves.')
+            }
+            return
+        } else if (this.queue.length <= 0) {
+            return
+        }
+
+        this.queue[0].time -= 1
+
+        if (this.queue[0].time <= 0) {
+            socket.emit(
+                'td-spawn_balloon',
+                {
+                    isHost:false,
+                    balloonData: {
+                        target:1, 
+                        index:this.queue[0].balloonIndex
+                    },
+                    room:gameCode
+                }
+            )
+
+            socket.emit(
+                'td-spawn_balloon',
+                {
+                    isHost:true,
+                    balloonData: {
+                        target:1, 
+                        index:this.queue[0].balloonIndex
+                    },
+                    room:gameCode
+                }
+            )
+
+            this.queue.shift()
+        }
+    }
+
+    render() {
+        ctx.fillStyle = 'white'; // Fill color
+        ctx.fillRect(canvas.width/2-30, canvas.height/2-30, 60, 60); // Fill the rectangle (x, y, width, height)
+        ctx.lineWidth = 4; // Border thickness
+        ctx.strokeStyle = 'black'; // Border color
+        ctx.strokeRect(canvas.width/2-30, canvas.height/2-30, 60, 60); // Draw the border
+
+
+        ctx.font = 'bold 24px Arial'; // Bold text
+        ctx.textAlign = 'center'; // Center horizontally
+        ctx.textBaseline = 'middle'; // Center vertically
+        ctx.fillStyle = 'blue'; // Text color
+        ctx.fillText(this.waveCount, canvas.width / 2, canvas.height / 2); // Draw text at center
+
     }
 }
 
@@ -333,11 +415,56 @@ const towers = [
     }
 ]
 
+
+const balloons = [
+    {
+        name: 'basic',
+        cost: 2,
+        color: 'black',
+        size: 30,
+        speed: 10,
+        damage: 3
+    },
+    {
+        name: 'standard',
+        cost: 4,
+        color: 'red',
+        size: 40,
+        speed: 6,
+        damage: 10
+    }
+]
+
+
 let selectedTower = null
 
-
+let waveManager = new WaveManager(
+    [
+        {time:30,balloonIndex:0},
+        {time:30,balloonIndex:1},
+        {time:30,balloonIndex:1},
+        {time:60,balloonIndex:1},
+        {time:60,balloonIndex:0},
+        {time:30,balloonIndex:0},
+        {time:30,balloonIndex:0}
+    ],
+    [
+        {time:20,balloonIndex:1},
+        {time:20,balloonIndex:1},
+        {time:20,balloonIndex:1},
+        {time:20,balloonIndex:1},
+        {time:20,balloonIndex:1},
+        {time:20,balloonIndex:1},
+        {time:20,balloonIndex:1}
+    ]
+)
 
 const startGameButton = new Button(canvas.width/3, canvas.height*2/3, canvas.width/3, 40, 'red')
+
+
+socket.on('td-update_wave', ({wave, room}) => {
+    waveManager.waveCount = wave
+})
 
 
 socket.on('td-pop_balloon', ({map, balloonIndex, room}) => {
@@ -357,6 +484,11 @@ socket.on('td-balloon_target_change', ({map, balloonIndex, positionIndex}) => {
     if (isHost) {
         return
     }
+
+    if (targetMap.balloons.length <= balloonIndex) {
+        return
+    }
+    console.log(balloonIndex, positionIndex)
     targetMap = map == 'host' ? hostMap : clientMap
     targetBalloon = targetMap.balloons[balloonIndex]
 
@@ -466,9 +598,14 @@ function checkPlaceBuilding() {
 }
 
 
-// TODO: let balloonQueue = [ 60, 60, 60, 60, 60 ]
 
 function handleBalloons() {
+    if (isHost) {
+        waveManager.update()
+    }
+
+    waveManager.render()
+
     hostMap.moveBalloons()
     clientMap.moveBalloons()
 }

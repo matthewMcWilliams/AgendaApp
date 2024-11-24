@@ -71,3 +71,11 @@ def pop_balloon(data):
 @socketio.on('td-update_health')
 def update_health(data):
     emit('td-update_health', data, room=f'game_{data['room']}')
+
+@socketio.on('td-update_wave')
+def update_wave(data):
+    emit('td-update_wave', data, room=f'game_{data['room']}')
+
+@socketio.on('debug')
+def debug(data):
+    print(data)
