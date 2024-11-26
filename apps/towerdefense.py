@@ -19,22 +19,6 @@ def start_game(room):
     emit('start_game', room=f'game_{room}')
 
 
-@socketio.on('td-spawn_balloon')
-def spawn_balloon(data):
-    isHost = data['isHost']
-    balloonData = data['balloonData']
-    room = data['room']
-    
-    emit(
-        'td-spawn_balloon',
-        {
-            'map': 'host' if isHost else 'client',
-            'data': balloonData
-        },
-        room=f'game_{room}'
-    )
-
-
 @socketio.on('td-balloon_target_change')
 def balloon_target_change(data):
     balloonIndex = data['balloon']
@@ -71,3 +55,7 @@ def update_wave(data):
 @socketio.on('td-place_building')
 def place_building(data):
     emit('td-place_building', data, room=f'game_{data['room']}')
+
+@socketio.on('td-spawn_balloon')
+def spawn_balloon(data):
+    emit('td-spawn_balloon', data, room=f'game_{data['room']}')

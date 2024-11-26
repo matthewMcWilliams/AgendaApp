@@ -251,12 +251,12 @@ class Map {
             drawCircle(x_0+building.x*s/10+s/20, y_0+building.y*s/10+s/20, s/20, building.color)
         })
 
-        this.balloons.forEach(({x, y, data}) => {
+        this.balloons.forEach((balloon) => {
             drawCircle(
-                x_0+x*s/10+s/20, 
-                y_0+y*s/10+s/20, 
-                s/20 * balloons[data.index].size/100, 
-                balloons[data.index].color
+                x_0+balloon.x*s/10+s/20, 
+                y_0+balloon.y*s/10+s/20, 
+                s/20 * balloon.adaptableParameters.size/100, 
+                balloon.adaptableParameters.color
             )
         })
     }
@@ -280,7 +280,7 @@ class Map {
         for (let i = 0; i < this.balloons.length; i++) {
             const balloon = this.balloons[i];
 
-            if (isHost && balloon.data.target >= this.balloonPath.length) {
+            if (isHost && balloon.target >= this.balloonPath.length) {
                 if (!balloon.popRequest) {
 
                     socket.emit(
@@ -295,35 +295,34 @@ class Map {
                         'td-update_health',
                         {
                             map: this == hostMap?'host':'client',
-                            newHealth: this.towerHealth - balloons[balloon.data.index].damage,
-                            message: `${balloons[balloon.data.index].color} balloon hit tower`,
+                            newHealth: this.towerHealth - balloon.health,
                             room: gameCode
                         }
                     )
 
                 }
                 balloon.popRequest = true
-                balloon.data.target = this.balloonPath.length - 1
+                balloon.target = this.balloonPath.length - 1
                 continue
 
-            } else if (balloon.data.target >= this.balloonPath.length) {
+            } else if (balloon.target >= this.balloonPath.length) {
                 // Client
-                balloon.data.target = this.balloonPath.length - 1
+                balloon.target = this.balloonPath.length - 1
                 
             }
 
-            let dirX = this.balloonPath[balloon.data.target].x - balloon.x
-            let dirY = this.balloonPath[balloon.data.target].y - balloon.y
+            let dirX = this.balloonPath[balloon.target].x - balloon.x
+            let dirY = this.balloonPath[balloon.target].y - balloon.y
             
-            const speed = balloons[balloon.data.index].speed
+            const speed = balloon.adaptableParameters.speed
             balloon.x += clamp(dirX, -1/60*speed, 1/60*speed)
             balloon.y += clamp(dirY, -1/60*speed, 1/60*speed)
     
             if (Math.abs(dirX) < 1/60*speed 
                     && Math.abs(dirY) < 1/60*speed) {
-                balloon.data.target++
-                if (isHost && balloon.data.target < this.balloonPath.length-1) {
-                    socket.emit('td-balloon_target_change', {balloon:i, position: balloon.data.target-1, room:gameCode, map:this==hostMap?'host':'client'})
+                balloon.target++
+                if (isHost && balloon.target < this.balloonPath.length-1) {
+                    socket.emit('td-balloon_target_change', {balloon:i, position: balloon.target-1, room:gameCode, map:this==hostMap?'host':'client'})
                 }
             }
         }
@@ -368,11 +367,8 @@ class WaveManager {
             socket.emit(
                 'td-spawn_balloon',
                 {
-                    isHost:false,
-                    balloonData: {
-                        target:1, 
-                        index:this.queue[0].balloonIndex
-                    },
+                    mapIsHost:false,
+                    health:balloonData[this.queue[0].balloonIndex].health,
                     room:gameCode
                 }
             )
@@ -380,11 +376,8 @@ class WaveManager {
             socket.emit(
                 'td-spawn_balloon',
                 {
-                    isHost:true,
-                    balloonData: {
-                        target:1, 
-                        index:this.queue[0].balloonIndex
-                    },
+                    mapIsHost:false,
+                    health:balloonData[this.queue[0].balloonIndex].health,
                     room:gameCode
                 }
             )
@@ -468,17 +461,34 @@ class Railgun extends Tower {
     }
 }
 
-// class Balloon {
-//     constructor({name, cost, color, size, speed, damage}) {
-//         this.name = name
-//         this.cost = cost
-//         this.color = color
-//         this.size = size
-//         this.speed = speed
-//         this.damage = damage
-//         this.button = new Button(1,2,3,4,this.color)
-//     }
-// }
+
+
+
+class Balloon {
+    constructor(health) {
+        this.health = health
+        this.x = 1
+        this.y = 0
+        this.target = 1
+    }
+
+    get adaptableParameters() {
+
+        if (this.health <= 1) {
+            return {
+                color: 'black',
+                size: 35,
+                speed: 5
+            }
+        } else {
+            return {
+                color: 'red',
+                size: 50,
+                speed: 3
+            }
+        }
+    }
+}
 
 
 const towerData = [
@@ -512,14 +522,13 @@ const towerClassList = [
 ]
 
 
-const balloons = [
+const balloonData = [
     {
         name: 'basic',
         cost: 2,
         color: 'black',
         size: 30,
-        speed: 10,
-        damage: 3,
+        health: 1,
         button: new Button(1,2,3,4,'black')
     },
     {
@@ -527,8 +536,7 @@ const balloons = [
         cost: 4,
         color: 'red',
         size: 40,
-        speed: 6,
-        damage: 10,
+        health: 5,
         button: new Button(1,2,3,4,'red')
     }
 ]
@@ -601,7 +609,7 @@ socket.on('td-balloon_target_change', ({map, balloonIndex, positionIndex}) => {
     targetBalloon.x = targetMap.balloonPath[positionIndex].x
     targetBalloon.y = targetMap.balloonPath[positionIndex].y
 
-    targetBalloon.data.target = positionIndex + 1
+    targetBalloon.target = positionIndex + 1
 })
 
 
@@ -613,17 +621,10 @@ socket.on('td-place_building', ({isForHost, x, y, index, room}) => {
 })
 
 
-socket.on('td-spawn_balloon', ({map, data}) => {
-    
-    targetMap = map == 'host' ? hostMap : clientMap
+socket.on('td-spawn_balloon', ({mapIsHost, health}) => {
+    targetMap = mapIsHost ? hostMap : clientMap
 
-    targetMap.balloons.push(
-        {
-            x:targetMap.balloonPath[0].x,
-            y:targetMap.balloonPath[0].y,
-            data:data  // Include things like color here
-        }
-    )
+    targetMap.balloons.push(new Balloon(health))
 })
 
 
@@ -670,8 +671,8 @@ function drawSectionBuild() {
             ctx.textAlign = 'center'
 
             ctx.fillStyle = 'black'
-            ctx.fillText(towerData.name, 700, 330)
-            ctx.fillText(`Cost: ${towerData.cost} coins`, 700, 360)
+            ctx.fillText(selectedTower.name, 700, 330)
+            ctx.fillText(`Cost: ${selectedTower.cost} coins`, 700, 360)
 
             drawCircle(mouseX, mouseY, 10, tower.color)
         }
@@ -679,8 +680,8 @@ function drawSectionBuild() {
 }
 
 function drawSectionAttack() {
-    for (let i = 0; i < balloons.length; i++) {
-        const balloon = balloons[i];
+    for (let i = 0; i < balloonData.length; i++) {
+        const balloon = balloonData[i];
         drawCircle(150+60*i, canvas.height*7/8, 55*balloon.size/100, balloon.color)
 
         balloon.button.x = 150+60*i-55*balloon.size/100
@@ -693,11 +694,8 @@ function drawSectionAttack() {
                 socket.emit(
                     'td-spawn_balloon',
                     {
-                        isHost:false,
-                        balloonData: {
-                            target:1, 
-                            index:i
-                        },
+                        mapIsHost:false,
+                        health:balloon.health,
                         room:gameCode
                     }
                 )
@@ -705,11 +703,8 @@ function drawSectionAttack() {
                 socket.emit(
                     'td-spawn_balloon',
                     {
-                        isHost:true,
-                        balloonData: {
-                            target:1, 
-                            index:i
-                        },
+                        mapIsHost:true,
+                        health:balloon.health,
                         room:gameCode
                     }
                 )
@@ -796,7 +791,7 @@ function checkPlaceBuilding() {
 
 function handleBalloons() {
     if (isHost) {
-        waveManager.update()
+        // waveManager.update()
     }
 
     waveManager.render()
