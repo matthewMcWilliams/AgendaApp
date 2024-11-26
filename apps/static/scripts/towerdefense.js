@@ -247,8 +247,8 @@ class Map {
         ctx.fillStyle = 'black'
         ctx.fillText(this.towerHealth, x_0 + 10 * s/10, y_0 + 2 * s/10) // Hardcoded for now, need to change later
 
-        this.buildings.forEach(({type, color, x, y}) => {
-            drawCircle(x_0+x*s/10+s/20, y_0+y*s/10+s/20, s/20, color)
+        this.buildings.forEach((building) => {
+            drawCircle(x_0+building.x*s/10+s/20, y_0+building.y*s/10+s/20, s/20, building.color)
         })
 
         this.balloons.forEach(({x, y, data}) => {
@@ -412,25 +412,103 @@ class WaveManager {
 
 
 
-const towers = [
+class Tower {
+    constructor(x, y) {
+        if(this.constructor == Tower) {
+            throw new Error("Class is of abstract type and can't be instantiated");
+        };
+
+        this.x = x
+        this.y = y
+    }
+
+    update() {
+        this.cooldownTimer -= 1/60
+    }
+}
+
+class Turbit extends Tower {
+    constructor(x, y) {
+        super(x, y)
+
+        this.name = 'turbit'
+        this.color = 'blue'
+        this.range = 4
+        this.cooldown = 0.4
+        this.cooldownTimer = this.cooldown
+        this.damage = 1
+    }
+}
+
+class MagnifiedLaser extends Tower {
+    constructor(x, y) {
+        super(x, y)
+
+        this.name = 'magnified laser'
+        this.color = 'red'
+        this.range = 3
+        this.cooldown = 0.02
+        this.cooldownTimer = this.cooldown
+        this.damage = 1
+    }
+}
+
+
+
+class Railgun extends Tower {
+    constructor(x, y) {
+        super(x, y)
+
+        this.name = 'railgun'
+        this.color = 'grey'
+        this.range = 7
+        this.cooldown = 4
+        this.cooldownTimer = this.cooldown
+        this.damage = 1
+    }
+}
+
+// class Balloon {
+//     constructor({name, cost, color, size, speed, damage}) {
+//         this.name = name
+//         this.cost = cost
+//         this.color = color
+//         this.size = size
+//         this.speed = speed
+//         this.damage = damage
+//         this.button = new Button(1,2,3,4,this.color)
+//     }
+// }
+
+
+const towerData = [
     {
         name:'turbit',
         cost: 2,
         color: 'blue',
-        button: new Button(1,2,3,4,'blue')
+        button: new Button(1,2,3,4,'blue'),
+        index: 0
     },
     {
         name: 'magnified laser',
         cost: 6,
         color: 'red',
-        button: new Button(1,2,3,4,'red')
+        button: new Button(1,2,3,4,'red'),
+        index: 1
     },
     {
         name: 'railgun',
         cost: 10,
         color: 'grey',
-        button: new Button(1,2,3,4,'grey')
+        button: new Button(1,2,3,4,'grey'),
+        index: 2
     }
+]
+
+const towerClassList = [
+    Turbit,
+    MagnifiedLaser,
+    Railgun
 ]
 
 
@@ -527,17 +605,10 @@ socket.on('td-balloon_target_change', ({map, balloonIndex, positionIndex}) => {
 })
 
 
-socket.on('td-place_building', ({map, x, y, tower}) => {
-
-    targetMap = map == 'host' ? hostMap : clientMap
-
+socket.on('td-place_building', ({isForHost, x, y, index, room}) => {
+    targetMap = isForHost ? hostMap : clientMap
     targetMap.buildings.push(
-        {
-            name: tower.name,
-            color: tower.color,
-            x: x,
-            y: y
-        }
+        new towerClassList[index](x, y)
     )
 })
 
@@ -580,8 +651,8 @@ function drawLayout() {
 
 
 function drawSectionBuild() {
-    for (let i = 0; i < towers.length; i++) {
-        const tower = towers[i];
+    for (let i = 0; i < towerData.length; i++) {
+        const tower = towerData[i];
         
         drawCircle(200+i*100, canvas.height-50, 35, tower.color)
 
@@ -599,8 +670,8 @@ function drawSectionBuild() {
             ctx.textAlign = 'center'
 
             ctx.fillStyle = 'black'
-            ctx.fillText(tower.name, 700, 330)
-            ctx.fillText(`Cost: ${tower.cost} coins`, 700, 360)
+            ctx.fillText(towerData.name, 700, 330)
+            ctx.fillText(`Cost: ${towerData.cost} coins`, 700, 360)
 
             drawCircle(mouseX, mouseY, 10, tower.color)
         }
@@ -709,7 +780,13 @@ function checkPlaceBuilding() {
         && spotEmpty
         && hasCoins
     ) {
-        socket.emit('td-place_building', ...mclick, playerList, selectedTower, gameCode)
+        socket.emit('td-place_building', {
+            isForHost:isHost,
+            x:mclick[0],
+            y:mclick[1],
+            index:selectedTower.index,
+            room:gameCode
+        })
         coins -= selectedTower.cost
         selectedTower = null
     }
