@@ -376,7 +376,7 @@ class WaveManager {
             socket.emit(
                 'td-spawn_balloon',
                 {
-                    mapIsHost:false,
+                    mapIsHost:true,
                     health:balloonData[this.queue[0].balloonIndex].health,
                     room:gameCode
                 }
@@ -573,23 +573,22 @@ let waveManager = new WaveManager(
 
 const startGameButton = new Button(canvas.width/3, canvas.height*2/3, canvas.width/3, 40, 'red')
 
-socket.on('td-add_coins', ({count, room}) => {
+socket.on('td-add_coins', ({count}) => {
     coins += count
-    console.log(count)
 })
 
-socket.on('td-update_wave', ({wave, room}) => {
+socket.on('td-update_wave', ({wave}) => {
     waveManager.waveCount = wave
 })
 
 
-socket.on('td-pop_balloon', ({map, balloonIndex, room}) => {
+socket.on('td-pop_balloon', ({map, balloonIndex}) => {
     targetMap = map == 'host' ? hostMap : clientMap
     targetMap.balloons.splice(balloonIndex, 1)
 })
 
 
-socket.on('td-update_health', ({map, newHealth, message, room}) => {
+socket.on('td-update_health', ({map, newHealth}) => {
     targetMap = map == 'host' ? hostMap : clientMap
     targetMap.towerHealth = newHealth
 })
@@ -791,7 +790,7 @@ function checkPlaceBuilding() {
 
 function handleBalloons() {
     if (isHost) {
-        // waveManager.update()
+        waveManager.update()
     }
 
     waveManager.render()
