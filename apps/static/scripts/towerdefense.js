@@ -14,11 +14,10 @@ const nickname = urlParams.get('nickname')
 
 const State = Object.freeze({
     LOBBY: 'lobby',
-    GAME: "game"
+    GAME: 'game'
 });
 
 let state = State.LOBBY
-
 
 
 socket.emit('create_lobby', {
@@ -54,9 +53,19 @@ socket.on('start_game', () => {
 })
 
 
+const Section = Object.freeze({
+    Build:'build',
+    Upgrade:'upgrade',
+    Attack:'attack',
+    Questions:'questions'
+})
+
+let section = Section.Build
+
 
 let mouseX, mouseY
 let mouseDown = false
+let mouseClick = 0
 
 canvas.addEventListener('mousemove', (event) => {
     const rect = canvas.getBoundingClientRect();
@@ -79,10 +88,12 @@ canvas.addEventListener('touchmove', (event) => {
 
 canvas.addEventListener('mousedown', (event) => {
     mouseDown = true;
+    mouseClick = 2;
 });
 
 canvas.addEventListener('touchstart', (event) => {
     mouseDown = true;
+    mouseClick = 2;
 })
 
 
@@ -430,7 +441,8 @@ const balloons = [
         color: 'black',
         size: 30,
         speed: 10,
-        damage: 3
+        damage: 3,
+        button: new Button(1,2,3,4,'black')
     },
     {
         name: 'standard',
@@ -438,7 +450,8 @@ const balloons = [
         color: 'red',
         size: 40,
         speed: 6,
-        damage: 10
+        damage: 10,
+        button: new Button(1,2,3,4,'red')
     }
 ]
 
@@ -566,8 +579,7 @@ function drawLayout() {
 }
 
 
-function drawPurchaseArea() {
-
+function drawSectionBuild() {
     for (let i = 0; i < towers.length; i++) {
         const tower = towers[i];
         
@@ -592,6 +604,79 @@ function drawPurchaseArea() {
 
             drawCircle(mouseX, mouseY, 10, tower.color)
         }
+    }
+}
+
+function drawSectionAttack() {
+    for (let i = 0; i < balloons.length; i++) {
+        const balloon = balloons[i];
+        drawCircle(150+60*i, canvas.height*7/8, 55*balloon.size/100, balloon.color)
+
+        balloon.button.x = 150+60*i-55*balloon.size/100
+        balloon.button.y = canvas.height*7/8-55*balloon.size/100
+        balloon.button.width = 55*balloon.size/100*2
+        balloon.button.height = 55*balloon.size/100*2
+
+        if (balloon.button.clicked && coins >= balloon.cost && mouseClick == 1) {
+            if (isHost) {
+                socket.emit(
+                    'td-spawn_balloon',
+                    {
+                        isHost:false,
+                        balloonData: {
+                            target:1, 
+                            index:i
+                        },
+                        room:gameCode
+                    }
+                )
+            } else {
+                socket.emit(
+                    'td-spawn_balloon',
+                    {
+                        isHost:true,
+                        balloonData: {
+                            target:1, 
+                            index:i
+                        },
+                        room:gameCode
+                    }
+                )
+            }
+            coins -= balloon.cost
+        }
+    }
+}
+
+
+let buildButton = new Button(20, canvas.height*3/4+20-5,30,30,'navy')
+let attackButton = new Button(60, canvas.height*3/4+20-5,30,30,'navy')
+let upgradeButton = new Button(20, canvas.height*3/4+60-5,30,30,'navy')
+let questionButton = new Button(60, canvas.height*3/4+60-5,30,30,'navy')
+
+
+function drawPurchaseArea() {
+
+    buildButton.render()
+    if (buildButton.clicked) { section = Section.Build }
+    attackButton.render()
+    if (attackButton.clicked) { section = Section.Attack }
+    upgradeButton.render()
+    if (upgradeButton.clicked) { console.log('Upgrade feature not built yet.')}
+    questionButton.render()
+    if (questionButton.clicked) { console.log('Question feature not built yet.')}
+
+    switch (section) {
+        case Section.Build:
+            drawSectionBuild()
+            break;
+        
+        case Section.Attack:
+            drawSectionAttack()
+            break;
+    
+        default:
+            break;
     }
 
     ctx.font = 'bold 24px Arial'; // Bold text
@@ -718,6 +803,7 @@ function draw() {
             break
     }
 
+    mouseClick -= 1
 
     const excessTime = msPassed % msPerFrame
     msPrev = msNow - excessTime
