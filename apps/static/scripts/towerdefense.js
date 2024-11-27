@@ -122,8 +122,30 @@ function drawCircle(x, y, r, c) {
     ctx.fill()
 }
 
+function drawCircleOutline(x, y, radius, color = 'black', lineWidth = 2) {
+    ctx.beginPath(); // Start a new path
+    ctx.arc(x, y, radius, 0, 2 * Math.PI); // Draw a circle (full 360°)
+    ctx.strokeStyle = color; // Set the outline color
+    ctx.lineWidth = lineWidth; // Set the outline thickness
+    ctx.stroke(); // Draw the outline
+}
+
+function drawLine(x1, y1, x2, y2, color = 'black', lineWidth = 2) {
+    ctx.beginPath(); // Start a new path
+    ctx.moveTo(x1, y1); // Starting point of the line
+    ctx.lineTo(x2, y2); // Ending point of the line
+    ctx.strokeStyle = color; // Set the line color
+    ctx.lineWidth = lineWidth; // Set the line thickness
+    ctx.stroke(); // Draw the line
+}
+
 
 let coins = 30
+
+
+function distance(x_1, y_1, x_2, y_2) {
+    return Math.sqrt((x_1-x_2)*(x_1-x_2)+(y_1-y_2)*(y_1-y_2))
+}
 
 
 
@@ -214,6 +236,10 @@ class Map {
     }
 
     render(x_0, y_0, s) {
+        this.x_0 = x_0
+        this.y_0 = y_0
+        this.s = s
+
         for (let i = 0; i < this.map.length; i++) {
             const list = this.map[i];
             for (let j = 0; j < list.length; j++) {
@@ -280,28 +306,27 @@ class Map {
         for (let i = 0; i < this.balloons.length; i++) {
             const balloon = this.balloons[i];
 
-            if (isHost && balloon.target >= this.balloonPath.length) {
-                if (!balloon.popRequest) {
-
-                    socket.emit(
-                        'td-pop_balloon', 
-                        {
-                             map:this==hostMap?'host':'client',
-                             balloonIndex:i, 
-                             room:gameCode
-                        })
-
+            if (isHost && (balloon.target >= this.balloonPath.length || balloon.health <= 0)) {
+                socket.emit(
+                    'td-pop_balloon', 
+                    {
+                        map:this==hostMap?'host':'client',
+                        balloonIndex:balloon.id, 
+                        room:gameCode
+                    }
+                )
+                
+                if (balloon.health > 0) {
                     socket.emit(
                         'td-update_health',
                         {
                             map: this == hostMap?'host':'client',
-                            newHealth: this.towerHealth - balloon.health,
+                            newHealth: this.towerHealth - Math.ceil(balloon.health),
                             room: gameCode
                         }
                     )
-
                 }
-                balloon.popRequest = true
+
                 balloon.target = this.balloonPath.length - 1
                 continue
 
@@ -354,7 +379,7 @@ class WaveManager {
                 this.waves.shift()
                 socket.emit('td-update_wave', {wave:this.waveCount+1, room:gameCode})
             } else {
-                console.log('Wave finished. No more waves.')
+                // console.log('Wave finished. No more waves.')
             }
             return
         } else if (this.queue.length <= 0) {
@@ -405,9 +430,9 @@ class WaveManager {
 
 
 
-class Tower {
+class Building {
     constructor(x, y) {
-        if(this.constructor == Tower) {
+        if(this.constructor == Building) {
             throw new Error("Class is of abstract type and can't be instantiated");
         };
 
@@ -418,37 +443,76 @@ class Tower {
     update() {
         this.cooldownTimer -= 1/60
     }
-}
 
-class Turbit extends Tower {
-    constructor(x, y) {
-        super(x, y)
-
-        this.name = 'turbit'
-        this.color = 'blue'
-        this.range = 4
-        this.cooldown = 0.4
+    shoot() {
         this.cooldownTimer = this.cooldown
-        this.damage = 1
     }
 }
 
-class MagnifiedLaser extends Tower {
+class Thorny extends Building {
+    constructor(x, y) {
+        super(x, y)
+
+        this.name = 'Thorny'
+        this.color = 'blue'
+        this.range = 2
+        this.cooldown = 2
+        this.cooldownTimer = this.cooldown
+        this.damage = 4
+    }
+
+    shoot(leadBalloon, map) {
+        super.shoot()
+        map.balloons.forEach(balloon => {
+            if (distance(balloon.x, balloon.y, this.x, this.y) < this.range) {
+                balloon.health -= this.damage
+            }
+        })
+    }
+
+    renderAttack(leadBalloon, map) {
+        if (this.cooldownTimer > this.cooldown - 0.1) {
+            console.log('yo')
+            drawCircle(map.x_0+this.x*map.s/10+14, map.y_0+this.y*map.s/10+14, this.range*28, this.color)
+        }
+    }
+}
+
+class MagnifiedLaser extends Building {
     constructor(x, y) {
         super(x, y)
 
         this.name = 'magnified laser'
         this.color = 'red'
         this.range = 3
-        this.cooldown = 0.02
+        this.cooldown = 0.06
         this.cooldownTimer = this.cooldown
-        this.damage = 1
+        this.damage = 0.2
+    }
+
+    shoot(leadBalloon, map) {
+        super.shoot()
+        leadBalloon.health -= this.damage
+    }
+
+    renderAttack(leadBalloon, map) {
+        if (leadBalloon == null) {
+            return
+        }
+        drawLine(
+            map.x_0+this.x*map.s/10+14, 
+            map.y_0+this.y*map.s/10+14,
+            map.x_0+leadBalloon.x*map.s/10+14,
+            map.y_0+leadBalloon.y*map.s/10+14,
+            this.color,
+            4
+        )
     }
 }
 
 
 
-class Railgun extends Tower {
+class Railgun extends Building {
     constructor(x, y) {
         super(x, y)
 
@@ -457,7 +521,42 @@ class Railgun extends Tower {
         this.range = 7
         this.cooldown = 4
         this.cooldownTimer = this.cooldown
-        this.damage = 1
+        this.damage = 10
+        this.splashRange = 1
+
+        this.previous_x = null
+        this.previous_y = null
+    }
+
+    shoot(leadBalloon, map) {
+        super.shoot()
+        map.balloons.forEach(balloon => {
+            if (distance(balloon.x, balloon.y, leadBalloon.x, leadBalloon.y) < this.splashRange) {
+                balloon.health -= this.damage
+            }
+        })
+        this.previous_x = leadBalloon.x
+        this.previous_y = leadBalloon.y
+    }
+
+    renderAttack(leadBalloon, map) {
+        if (this.cooldownTimer > this.cooldown - 0.25) {
+            console.log('yo')
+            drawCircle(map.x_0+this.previous_x*map.s/10+14, map.y_0+this.previous_y*map.s/10+14, this.splashRange*28, this.color)
+        }
+
+        if (leadBalloon == null) {
+            return
+        }
+
+        drawLine(
+            map.x_0+this.x*map.s/10+14, 
+            map.y_0+this.y*map.s/10+14,
+            map.x_0+leadBalloon.x*map.s/10+14,
+            map.y_0+leadBalloon.y*map.s/10+14,
+            this.color,
+            4
+        )
     }
 }
 
@@ -465,11 +564,15 @@ class Railgun extends Tower {
 
 
 class Balloon {
+    static idTracker = 0
     constructor(health) {
         this.health = health
         this.x = 1
         this.y = 0
         this.target = 1
+        this.id = Balloon.idTracker
+
+        Balloon.idTracker += 1
     }
 
     get adaptableParameters() {
@@ -491,32 +594,35 @@ class Balloon {
 }
 
 
-const towerData = [
+const buildingData = [
     {
-        name:'turbit',
-        cost: 2,
+        name:'Thorny',
+        cost: 4,
         color: 'blue',
         button: new Button(1,2,3,4,'blue'),
-        index: 0
+        index: 0,
+        range: 2
     },
     {
         name: 'magnified laser',
         cost: 6,
         color: 'red',
         button: new Button(1,2,3,4,'red'),
-        index: 1
+        index: 1,
+        range: 3
     },
     {
         name: 'railgun',
         cost: 10,
         color: 'grey',
         button: new Button(1,2,3,4,'grey'),
-        index: 2
+        index: 2,
+        range: 7
     }
 ]
 
-const towerClassList = [
-    Turbit,
+const buildingClassList = [
+    Thorny,
     MagnifiedLaser,
     Railgun
 ]
@@ -536,13 +642,13 @@ const balloonData = [
         cost: 4,
         color: 'red',
         size: 40,
-        health: 5,
+        health: 6,
         button: new Button(1,2,3,4,'red')
     }
 ]
 
 
-let selectedTower = null
+let selectedBuilding = null
 
 let waveManager = new WaveManager(
     {
@@ -584,7 +690,7 @@ socket.on('td-update_wave', ({wave}) => {
 
 socket.on('td-pop_balloon', ({map, balloonIndex}) => {
     targetMap = map == 'host' ? hostMap : clientMap
-    targetMap.balloons.splice(balloonIndex, 1)
+    targetMap.balloons = targetMap.balloons.filter(balloon => balloon.id != balloonIndex)
 })
 
 
@@ -615,7 +721,7 @@ socket.on('td-balloon_target_change', ({map, balloonIndex, positionIndex}) => {
 socket.on('td-place_building', ({isForHost, x, y, index, room}) => {
     targetMap = isForHost ? hostMap : clientMap
     targetMap.buildings.push(
-        new towerClassList[index](x, y)
+        new buildingClassList[index](x, y)
     )
 })
 
@@ -651,29 +757,30 @@ function drawLayout() {
 
 
 function drawSectionBuild() {
-    for (let i = 0; i < towerData.length; i++) {
-        const tower = towerData[i];
+    for (let i = 0; i < buildingData.length; i++) {
+        const building = buildingData[i];
         
-        drawCircle(200+i*100, canvas.height-50, 35, tower.color)
+        drawCircle(200+i*100, canvas.height-50, 35, building.color)
 
-        tower.button.x = 200 + i * 100 - 35
-        tower.button.y = canvas.height - 50 - 35
-        tower.button.width = 70
-        tower.button.height = 70
+        building.button.x = 200 + i * 100 - 35
+        building.button.y = canvas.height - 50 - 35
+        building.button.width = 70
+        building.button.height = 70
 
-        if (tower.button.clicked && coins >= tower.cost) {
-            selectedTower = tower
+        if (building.button.clicked && coins >= building.cost) {
+            selectedBuilding = building
         }
 
-        if (selectedTower == tower) {
+        if (selectedBuilding == building) {
             ctx.font = 'bold 12px Arial'
             ctx.textAlign = 'center'
 
             ctx.fillStyle = 'black'
-            ctx.fillText(selectedTower.name, 700, 330)
-            ctx.fillText(`Cost: ${selectedTower.cost} coins`, 700, 360)
+            ctx.fillText(selectedBuilding.name, 700, 330)
+            ctx.fillText(`Cost: ${selectedBuilding.cost} coins`, 700, 360)
 
-            drawCircle(mouseX, mouseY, 10, tower.color)
+            drawCircle(mouseX, mouseY, 10, building.color)
+            drawCircleOutline(mouseX, mouseY, selectedBuilding.range*28, 'black', 2)
         }
     }
 }
@@ -761,13 +868,13 @@ function drawPurchaseArea() {
 function checkPlaceBuilding() {
     mclick = myMap.clicked(isHost?45:canvas.width/2+20+45, 10, canvas.height*3/4-20)
 
-    if (mclick == false || selectedTower == null) {
+    if (mclick == false || selectedBuilding == null) {
         return
     }
 
     let spotEmpty = !myMap.buildings.map(building => building.x == mclick[0] && building.y == mclick[1]).includes(true)
     let mapIsGrass = myMap.map[mclick[1]][mclick[0]] == 0
-    let hasCoins = selectedTower.cost <= coins
+    let hasCoins = selectedBuilding.cost <= coins
     
     if (
         mapIsGrass
@@ -778,11 +885,11 @@ function checkPlaceBuilding() {
             isForHost:isHost,
             x:mclick[0],
             y:mclick[1],
-            index:selectedTower.index,
+            index:selectedBuilding.index,
             room:gameCode
         })
-        coins -= selectedTower.cost
-        selectedTower = null
+        coins -= selectedBuilding.cost
+        selectedBuilding = null
     }
 }
 
@@ -797,6 +904,33 @@ function handleBalloons() {
 
     hostMap.moveBalloons()
     clientMap.moveBalloons()
+}
+
+
+function handleBuildingShoot() {
+
+    const loopFunction = ((theMap, building) => {
+        building.update()
+        let farthestBalloon = null
+        let farthestBalloonTarget = -1  // Arbritrarily High Number
+        theMap.balloons.forEach(balloon => {
+            const d = distance(building.x, building.y, balloon.x, balloon.y)
+            if (d < building.range && balloon.target > farthestBalloonTarget) {
+                farthestBalloon = balloon
+                farthestBalloonTarget = balloon.target
+            }
+        })
+        building.renderAttack(farthestBalloon, theMap)
+        if (farthestBalloon != null) {
+            if (building.cooldownTimer > 0) {
+                return
+            }
+            building.shoot(farthestBalloon, theMap)
+        }
+    })
+
+    hostMap.buildings.forEach(building => loopFunction(hostMap, building));
+    clientMap.buildings.forEach(building => loopFunction(clientMap, building));
 }
 
 
@@ -843,6 +977,8 @@ function drawGame() {
     checkPlaceBuilding()
 
     handleBalloons()
+
+    handleBuildingShoot()
 }
 
 
