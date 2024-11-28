@@ -35,6 +35,7 @@ def create_app():
     from .study import study_bp
     from .lobby import lobby_bp
     from .towerdefense import towerdefense_bp
+    from .api import api_bp
 
     # Register blueprints
     app.register_blueprint(login_bp)
@@ -42,6 +43,7 @@ def create_app():
     app.register_blueprint(study_bp)
     app.register_blueprint(lobby_bp)
     app.register_blueprint(towerdefense_bp)
+    app.register_blueprint(api_bp)
 
     # Create tables (only for development/testing; use migrations for production)
     with app.app_context():

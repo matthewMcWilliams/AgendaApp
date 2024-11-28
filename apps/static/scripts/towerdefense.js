@@ -140,11 +140,22 @@ function drawLine(x1, y1, x2, y2, color = 'black', lineWidth = 2) {
 }
 
 
-let coins = 30
+let coins = 0
+
 
 
 function distance(x_1, y_1, x_2, y_2) {
     return Math.sqrt((x_1-x_2)*(x_1-x_2)+(y_1-y_2)*(y_1-y_2))
+}
+
+function getRandomElements(arr, numElements) {
+    // Shuffle the array using the Fisher-Yates algorithm
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    // Return the first `numElements` items from the shuffled array
+    return arr.slice(0, numElements);
 }
 
 
@@ -472,7 +483,6 @@ class Thorny extends Building {
 
     renderAttack(leadBalloon, map) {
         if (this.cooldownTimer > this.cooldown - 0.1) {
-            console.log('yo')
             drawCircle(map.x_0+this.x*map.s/10+14, map.y_0+this.y*map.s/10+14, this.range*28, this.color)
         }
     }
@@ -541,7 +551,6 @@ class Railgun extends Building {
 
     renderAttack(leadBalloon, map) {
         if (this.cooldownTimer > this.cooldown - 0.25) {
-            console.log('yo')
             drawCircle(map.x_0+this.previous_x*map.s/10+14, map.y_0+this.previous_y*map.s/10+14, this.splashRange*28, this.color)
         }
 
@@ -661,7 +670,7 @@ let waveManager = new WaveManager(
             {time:30,balloonIndex:0},
             {time:30,balloonIndex:0}
         ],
-        coinBonus:10
+        coinBonus:0
     },
     {
         balloons:[
@@ -673,7 +682,7 @@ let waveManager = new WaveManager(
             {time:20,balloonIndex:1},
             {time:20,balloonIndex:1}
         ],
-        coinBonus:20
+        coinBonus:0
     }
 )
 
@@ -821,6 +830,93 @@ function drawSectionAttack() {
 }
 
 
+let questionData = null
+let currentQuestion = {
+    definition: '',
+    term: '',
+    answerChoices: ['', '', '', ''],
+    answered: -1,
+    timer: 1
+}
+
+function generateQuestion() {
+    let elements = getRandomElements(questionData, 4)
+    currentQuestion.definition = elements[0].definition
+    currentQuestion.term = elements[0].term
+    currentQuestion.answerChoices = elements.map(e => e.term)
+    currentQuestion.answered = -1
+    currentQuestion.timer = 1
+
+    // Fisher-Yates algorithm
+    for (let i = currentQuestion.answerChoices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [currentQuestion.answerChoices[i], currentQuestion.answerChoices[j]] = [currentQuestion.answerChoices[j], currentQuestion.answerChoices[i]];
+    }
+}
+
+fetch(`/api/deck/${deckId}`, {method: "GET"})
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`)
+        }
+        return response.json()
+    })
+    .then(data => {
+        questionData = data.cards
+    })
+    .then(() => {
+        generateQuestion()
+    })
+    .catch(error => {
+        console.log('Fetch error:', error)
+    })
+
+const answerChoiceButton = new Button(1, 2, 3, 4, 'silver')
+    
+function drawSectionQuestions() {
+
+    ctx.font = 'bold 24px Arial'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = 'black'
+    ctx.fillText(currentQuestion.definition, canvas.width / 2, canvas.height * 13/16)
+
+    for (let i = 0; i < currentQuestion.answerChoices.length; i++) {
+        const choice = currentQuestion.answerChoices[i];
+        answerChoiceButton.x = i * canvas.width/5 + 120
+        answerChoiceButton.y = canvas.height * 7/8
+        answerChoiceButton.width = canvas.width / 6
+        answerChoiceButton.height = 30
+        if (currentQuestion.answered == i && currentQuestion.term.toLocaleLowerCase() == choice.toLocaleLowerCase()) {
+            answerChoiceButton.fill = 'DarkSeaGreen'
+            currentQuestion.timer -= 1/60
+        } else if (currentQuestion.answered == i) {
+            answerChoiceButton.fill = 'IndianRed'
+            currentQuestion.timer -= 1/60
+        } else {
+            answerChoiceButton.fill = 'silver'
+        }
+        answerChoiceButton.render()
+        
+        ctx.fillStyle = 'black'
+        ctx.font = '16px Arial'
+        ctx.fillText(choice, i * canvas.width / 5 + 180, canvas.height * 15/16-5)
+
+        if (answerChoiceButton.clicked && currentQuestion.answered == -1) {
+            currentQuestion.answered = i
+        }
+    }
+
+    if (currentQuestion.timer < 0) {
+        if (currentQuestion.answerChoices[currentQuestion.answered].toLocaleLowerCase() == currentQuestion.term.toLocaleLowerCase()) {
+            coins += 1
+        }
+        generateQuestion()
+    }
+}
+
+
+
 let buildButton = new Button(20, canvas.height*3/4+20-5,30,30,'navy')
 let attackButton = new Button(60, canvas.height*3/4+20-5,30,30,'navy')
 let upgradeButton = new Button(20, canvas.height*3/4+60-5,30,30,'navy')
@@ -836,7 +932,7 @@ function drawPurchaseArea() {
     upgradeButton.render()
     if (upgradeButton.clicked) { console.log('Upgrade feature not built yet.')}
     questionButton.render()
-    if (questionButton.clicked) { console.log('Question feature not built yet.')}
+    if (questionButton.clicked) { section = Section.Questions }
 
     switch (section) {
         case Section.Build:
@@ -847,6 +943,10 @@ function drawPurchaseArea() {
             drawSectionAttack()
             break;
     
+        case Section.Questions:
+            drawSectionQuestions()
+            break;
+
         default:
             break;
     }
