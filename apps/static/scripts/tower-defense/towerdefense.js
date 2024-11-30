@@ -1,24 +1,23 @@
+import balloonData from "./balloon-data.js";
+import { Building, Thorny, MagnifiedLaser, Railgun, buildingClassList } from './Building.js'
+import buildingData from "./building-data.js";
+console.log(balloonData)
+import Button from "./Button.js"
+import State from './State.js'
+import waveData from "./wave-data.js";
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const socket = io()
 
 const clamp = (x, a, b) => Math.max(a, Math.min(x, b))
 
-
 const urlParams = new URLSearchParams(window.location.search);
 
 const urlCode = urlParams.get("code");
 const nickname = urlParams.get('nickname')
 
-
-
-const State = Object.freeze({
-    LOBBY: 'lobby',
-    GAME: 'game'
-});
-
 let state = State.LOBBY
-
 
 socket.emit('create_lobby', {
     'mode':'tower-defense',
@@ -60,7 +59,7 @@ const Section = Object.freeze({
     Questions:'questions'
 })
 
-let section = Section.Build
+let section = Section.Questions
 
 
 let mouseX, mouseY
@@ -141,7 +140,7 @@ function drawLine(x1, y1, x2, y2, color = 'black', lineWidth = 2) {
 
 
 let coins = 0
-
+let coinsPerQuestion = [1,2,3,5,8,12,20]
 
 
 function distance(x_1, y_1, x_2, y_2) {
@@ -156,38 +155,6 @@ function getRandomElements(arr, numElements) {
     }
     // Return the first `numElements` items from the shuffled array
     return arr.slice(0, numElements);
-}
-
-
-
-class Button {
-    constructor(x, y, width, height, fill='blue') {
-        this.x = x
-        this.y = y
-        this.width = width
-        this.height = height
-
-        this.fill = fill
-    }
-
-    render() {
-        ctx.fillStyle = this.fill
-        ctx.fillRect(this.x, this.y, this.width, this.height)
-
-        ctx.strokeStyle = 'black'
-        ctx.lineWidth = 0.15
-        ctx.strokeRect(this.x, this.y, this.width, this.height)
-    }
-
-    get clicked() {
-        return (
-            mouseDown &&
-            mouseX < this.x + this.width && mouseX > this.x &&
-            mouseY < this.y + this.height && mouseY > this.y
-        )
-    }
-
-
 }
 
 
@@ -259,10 +226,10 @@ class Map {
                 // get color
                 switch (tileID) {
                     case 0:
-                        ctx.fillStyle = 'green'
+                        ctx.fillStyle = 'DarkOliveGreen'
                         break;
                     case 1:
-                        ctx.fillStyle = 'yellow'
+                        ctx.fillStyle = 'BurlyWood'
                     default:
                         break;
                 }
@@ -285,15 +252,36 @@ class Map {
         ctx.fillText(this.towerHealth, x_0 + 10 * s/10, y_0 + 2 * s/10) // Hardcoded for now, need to change later
 
         this.buildings.forEach((building) => {
-            drawCircle(x_0+building.x*s/10+s/20, y_0+building.y*s/10+s/20, s/20, building.color)
+
+            switch (building.upgradeLevel) {
+                case 1:
+                    ctx.fillStyle = 'Chocolate'
+                    ctx.fillRect(x_0+building.x*s/10, y_0+building.y*s/10, s/10, s/10)
+                    break;
+                
+                case 2:
+                    ctx.fillStyle = 'DarkGrey'
+                    ctx.fillRect(x_0+building.x*s/10, y_0+building.y*s/10, s/10, s/10)
+                    break
+                
+                case 3:
+                    ctx.fillStyle = 'GoldenRod'
+                    ctx.fillRect(x_0+building.x*s/10, y_0+building.y*s/10, s/10, s/10)
+                    break
+            
+                default:
+                    break;
+            }
+
+            drawCircle(x_0+building.x*s/10+s/20, y_0+building.y*s/10+s/20, s/22, building.color)
         })
 
         this.balloons.forEach((balloon) => {
             drawCircle(
                 x_0+balloon.x*s/10+s/20, 
                 y_0+balloon.y*s/10+s/20, 
-                s/20 * balloon.adaptableParameters.size/100, 
-                balloon.adaptableParameters.color
+                s/20 * balloon.size/100, 
+                balloon.color
             )
         })
     }
@@ -350,7 +338,7 @@ class Map {
             let dirX = this.balloonPath[balloon.target].x - balloon.x
             let dirY = this.balloonPath[balloon.target].y - balloon.y
             
-            const speed = balloon.adaptableParameters.speed
+            const speed = balloon.speed
             balloon.x += clamp(dirX, -1/60*speed, 1/60*speed)
             balloon.y += clamp(dirY, -1/60*speed, 1/60*speed)
     
@@ -367,9 +355,8 @@ class Map {
 
 
 class WaveManager {
-    constructor(...waves) {
-        this.waves = waves.map(x => x.balloons)
-        this.coinBonuses = waves.map(x => x.coinBonus)
+    constructor(waves) {
+        this.waves = waves
 
         this.queue = this.waves[0]
 
@@ -381,10 +368,6 @@ class WaveManager {
         const noBalloons = hostMap.balloons.length == 0 && clientMap.balloons.length == 0
 
         if (this.queue.length == 0 && noBalloons) {
-            if (this.coinBonuses.length > 0) {
-                socket.emit('td-add_coins', {count:this.coinBonuses[0],room:gameCode})
-                this.coinBonuses.shift()
-            }
             if (this.waves.length > 1) {
                 this.queue = this.waves[1]
                 this.waves.shift()
@@ -404,7 +387,7 @@ class WaveManager {
                 'td-spawn_balloon',
                 {
                     mapIsHost:false,
-                    health:balloonData[this.queue[0].balloonIndex].health,
+                    index:this.queue[0].balloonIndex,
                     room:gameCode
                 }
             )
@@ -413,7 +396,7 @@ class WaveManager {
                 'td-spawn_balloon',
                 {
                     mapIsHost:true,
-                    health:balloonData[this.queue[0].balloonIndex].health,
+                    index:this.queue[0].balloonIndex,
                     room:gameCode
                 }
             )
@@ -441,250 +424,32 @@ class WaveManager {
 
 
 
-class Building {
-    constructor(x, y) {
-        if(this.constructor == Building) {
-            throw new Error("Class is of abstract type and can't be instantiated");
-        };
-
-        this.x = x
-        this.y = y
-    }
-
-    update() {
-        this.cooldownTimer -= 1/60
-    }
-
-    shoot() {
-        this.cooldownTimer = this.cooldown
-    }
-}
-
-class Thorny extends Building {
-    constructor(x, y) {
-        super(x, y)
-
-        this.name = 'Thorny'
-        this.color = 'blue'
-        this.range = 2
-        this.cooldown = 2
-        this.cooldownTimer = this.cooldown
-        this.damage = 4
-    }
-
-    shoot(leadBalloon, map) {
-        super.shoot()
-        map.balloons.forEach(balloon => {
-            if (distance(balloon.x, balloon.y, this.x, this.y) < this.range) {
-                balloon.health -= this.damage
-            }
-        })
-    }
-
-    renderAttack(leadBalloon, map) {
-        if (this.cooldownTimer > this.cooldown - 0.1) {
-            drawCircle(map.x_0+this.x*map.s/10+14, map.y_0+this.y*map.s/10+14, this.range*28, this.color)
-        }
-    }
-}
-
-class MagnifiedLaser extends Building {
-    constructor(x, y) {
-        super(x, y)
-
-        this.name = 'magnified laser'
-        this.color = 'red'
-        this.range = 3
-        this.cooldown = 0.06
-        this.cooldownTimer = this.cooldown
-        this.damage = 0.2
-    }
-
-    shoot(leadBalloon, map) {
-        super.shoot()
-        leadBalloon.health -= this.damage
-    }
-
-    renderAttack(leadBalloon, map) {
-        if (leadBalloon == null) {
-            return
-        }
-        drawLine(
-            map.x_0+this.x*map.s/10+14, 
-            map.y_0+this.y*map.s/10+14,
-            map.x_0+leadBalloon.x*map.s/10+14,
-            map.y_0+leadBalloon.y*map.s/10+14,
-            this.color,
-            4
-        )
-    }
-}
-
-
-
-class Railgun extends Building {
-    constructor(x, y) {
-        super(x, y)
-
-        this.name = 'railgun'
-        this.color = 'grey'
-        this.range = 7
-        this.cooldown = 4
-        this.cooldownTimer = this.cooldown
-        this.damage = 10
-        this.splashRange = 1
-
-        this.previous_x = null
-        this.previous_y = null
-    }
-
-    shoot(leadBalloon, map) {
-        super.shoot()
-        map.balloons.forEach(balloon => {
-            if (distance(balloon.x, balloon.y, leadBalloon.x, leadBalloon.y) < this.splashRange) {
-                balloon.health -= this.damage
-            }
-        })
-        this.previous_x = leadBalloon.x
-        this.previous_y = leadBalloon.y
-    }
-
-    renderAttack(leadBalloon, map) {
-        if (this.cooldownTimer > this.cooldown - 0.25) {
-            drawCircle(map.x_0+this.previous_x*map.s/10+14, map.y_0+this.previous_y*map.s/10+14, this.splashRange*28, this.color)
-        }
-
-        if (leadBalloon == null) {
-            return
-        }
-
-        drawLine(
-            map.x_0+this.x*map.s/10+14, 
-            map.y_0+this.y*map.s/10+14,
-            map.x_0+leadBalloon.x*map.s/10+14,
-            map.y_0+leadBalloon.y*map.s/10+14,
-            this.color,
-            4
-        )
-    }
-}
-
-
-
 
 class Balloon {
-    static idTracker = 0
-    constructor(health) {
-        this.health = health
-        this.x = 1
-        this.y = 0
-        this.target = 1
-        this.id = Balloon.idTracker
+    static idTracker = 0;
+    static exponentialHealth = [1, 3, 10, 30, 80, 200]; // Health values for six types of balloons.
 
-        Balloon.idTracker += 1
-    }
+    constructor(index) {
+        this.health = balloonData[index].health
+        this.size = balloonData[index].size
+        this.color = balloonData[index].color
+        this.speed = balloonData[index].speed
 
-    get adaptableParameters() {
+        this.x = 1;
+        this.y = 0;
+        this.target = 1;
+        this.id = Balloon.idTracker;
 
-        if (this.health <= 1) {
-            return {
-                color: 'black',
-                size: 35,
-                speed: 5
-            }
-        } else {
-            return {
-                color: 'red',
-                size: 50,
-                speed: 3
-            }
-        }
+        Balloon.idTracker += 1;
     }
 }
-
-
-const buildingData = [
-    {
-        name:'Thorny',
-        cost: 4,
-        color: 'blue',
-        button: new Button(1,2,3,4,'blue'),
-        index: 0,
-        range: 2
-    },
-    {
-        name: 'magnified laser',
-        cost: 6,
-        color: 'red',
-        button: new Button(1,2,3,4,'red'),
-        index: 1,
-        range: 3
-    },
-    {
-        name: 'railgun',
-        cost: 10,
-        color: 'grey',
-        button: new Button(1,2,3,4,'grey'),
-        index: 2,
-        range: 7
-    }
-]
-
-const buildingClassList = [
-    Thorny,
-    MagnifiedLaser,
-    Railgun
-]
-
-
-const balloonData = [
-    {
-        name: 'basic',
-        cost: 2,
-        color: 'black',
-        size: 30,
-        health: 1,
-        button: new Button(1,2,3,4,'black')
-    },
-    {
-        name: 'standard',
-        cost: 4,
-        color: 'red',
-        size: 40,
-        health: 6,
-        button: new Button(1,2,3,4,'red')
-    }
-]
 
 
 let selectedBuilding = null
 
-let waveManager = new WaveManager(
-    {
-        balloons:[
-            {time:30,balloonIndex:0},
-            {time:30,balloonIndex:1},
-            {time:30,balloonIndex:1},
-            {time:60,balloonIndex:1},
-            {time:60,balloonIndex:0},
-            {time:30,balloonIndex:0},
-            {time:30,balloonIndex:0}
-        ],
-        coinBonus:0
-    },
-    {
-        balloons:[
-            {time:20,balloonIndex:1},
-            {time:20,balloonIndex:1},
-            {time:20,balloonIndex:1},
-            {time:20,balloonIndex:1},
-            {time:20,balloonIndex:1},
-            {time:20,balloonIndex:1},
-            {time:20,balloonIndex:1}
-        ],
-        coinBonus:0
-    }
-)
+const waveManager = new WaveManager(waveData)
+
+
 
 const startGameButton = new Button(canvas.width/3, canvas.height*2/3, canvas.width/3, 40, 'red')
 
@@ -698,13 +463,13 @@ socket.on('td-update_wave', ({wave}) => {
 
 
 socket.on('td-pop_balloon', ({map, balloonIndex}) => {
-    targetMap = map == 'host' ? hostMap : clientMap
+    const targetMap = map == 'host' ? hostMap : clientMap
     targetMap.balloons = targetMap.balloons.filter(balloon => balloon.id != balloonIndex)
 })
 
 
 socket.on('td-update_health', ({map, newHealth}) => {
-    targetMap = map == 'host' ? hostMap : clientMap
+    const targetMap = map == 'host' ? hostMap : clientMap
     targetMap.towerHealth = newHealth
 })
 
@@ -717,7 +482,7 @@ socket.on('td-balloon_target_change', ({map, balloonIndex, positionIndex}) => {
     if (targetMap.balloons.length <= balloonIndex) {
         return
     }
-    targetMap = map == 'host' ? hostMap : clientMap
+    const targetMap = map == 'host' ? hostMap : clientMap
     targetBalloon = targetMap.balloons[balloonIndex]
 
     targetBalloon.x = targetMap.balloonPath[positionIndex].x
@@ -728,17 +493,17 @@ socket.on('td-balloon_target_change', ({map, balloonIndex, positionIndex}) => {
 
 
 socket.on('td-place_building', ({isForHost, x, y, index, room}) => {
-    targetMap = isForHost ? hostMap : clientMap
+    const targetMap = isForHost ? hostMap : clientMap
     targetMap.buildings.push(
         new buildingClassList[index](x, y)
     )
 })
 
 
-socket.on('td-spawn_balloon', ({mapIsHost, health}) => {
-    targetMap = mapIsHost ? hostMap : clientMap
+socket.on('td-spawn_balloon', ({mapIsHost, index}) => {
+    const targetMap = mapIsHost ? hostMap : clientMap
 
-    targetMap.balloons.push(new Balloon(health))
+    targetMap.balloons.push(new Balloon(index))
 })
 
 
@@ -769,7 +534,10 @@ function drawSectionBuild() {
     for (let i = 0; i < buildingData.length; i++) {
         const building = buildingData[i];
         
-        drawCircle(200+i*100, canvas.height-50, 35, building.color)
+        drawCircle(200+i*80, canvas.height-50, 35, building.color)
+
+        ctx.fillStyle = 'black'
+        ctx.fillText(building.cost, 200+i*80, canvas.height-50)
 
         building.button.x = 200 + i * 100 - 35
         building.button.y = canvas.height - 50 - 35
@@ -799,6 +567,9 @@ function drawSectionAttack() {
         const balloon = balloonData[i];
         drawCircle(150+60*i, canvas.height*7/8, 55*balloon.size/100, balloon.color)
 
+        ctx.fillStyle = 'black'
+        ctx.fillText(balloon.cost, 150+60*i, canvas.height - 20)
+
         balloon.button.x = 150+60*i-55*balloon.size/100
         balloon.button.y = canvas.height*7/8-55*balloon.size/100
         balloon.button.width = 55*balloon.size/100*2
@@ -810,7 +581,7 @@ function drawSectionAttack() {
                     'td-spawn_balloon',
                     {
                         mapIsHost:false,
-                        health:balloon.health,
+                        index:i,
                         room:gameCode
                     }
                 )
@@ -819,7 +590,7 @@ function drawSectionAttack() {
                     'td-spawn_balloon',
                     {
                         mapIsHost:true,
-                        health:balloon.health,
+                        index:i,
                         room:gameCode
                     }
                 )
@@ -887,12 +658,14 @@ function drawSectionQuestions() {
         answerChoiceButton.y = canvas.height * 7/8
         answerChoiceButton.width = canvas.width / 6
         answerChoiceButton.height = 30
-        if (currentQuestion.answered == i && currentQuestion.term.toLocaleLowerCase() == choice.toLocaleLowerCase()) {
+        if (currentQuestion.answered > -1 && currentQuestion.term.toLocaleLowerCase() == choice.toLocaleLowerCase()) {
             answerChoiceButton.fill = 'DarkSeaGreen'
+            if (currentQuestion.timer == 1 && currentQuestion.answered == i) {
+                coins += coinsPerQuestion[0]
+            }
             currentQuestion.timer -= 1/60
         } else if (currentQuestion.answered == i) {
             answerChoiceButton.fill = 'IndianRed'
-            currentQuestion.timer -= 1/60
         } else {
             answerChoiceButton.fill = 'silver'
         }
@@ -908,10 +681,88 @@ function drawSectionQuestions() {
     }
 
     if (currentQuestion.timer < 0) {
-        if (currentQuestion.answerChoices[currentQuestion.answered].toLocaleLowerCase() == currentQuestion.term.toLocaleLowerCase()) {
-            coins += 1
-        }
         generateQuestion()
+    }
+}
+
+
+let selectedBuildingForUpgrade = null
+
+function drawSectionUpgrade() {
+    const button = new Button(1,2,3,4,'red')
+
+    myMap.buildings.forEach(building => {
+        button.x = myMap.x_0 + building.x * myMap.s/10
+        button.y = myMap.y_0 + building.y * myMap.s/10
+        button.width = 30
+        button.height = 30
+        
+        if (button.clicked) {
+            selectedBuildingForUpgrade = building
+        }
+    });
+
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle'; 
+    
+    if (selectedBuildingForUpgrade != null) {
+
+        const data = buildingData.find(d => d.name == selectedBuildingForUpgrade.name)
+        
+        const leftButton = new Button(100, canvas.height * 3/4 + 10, 300, canvas.height / 4 - 20, 'CornflowerBlue')
+        leftButton.render()
+        
+        ctx.fillStyle = 'black';
+        let upgrade = data.upgradePath[selectedBuildingForUpgrade.upgradeLevel].option1
+        ctx.fillText(upgrade.message, canvas.width / 3, canvas.height *7/8);
+
+        if (leftButton.clicked && coins >= upgrade.cost) {
+            selectedBuildingForUpgrade[upgrade.feature] = upgrade.value
+            coins -= upgrade.cost
+            selectedBuildingForUpgrade.upgradeLevel += 1
+            selectedBuildingForUpgrade = null
+            return
+        }
+        
+        const rightButton = new Button(canvas.width/2 + 20, canvas.height * 3/4 + 10, 300, canvas.height/4-20, 'CornflowerBlue')
+        rightButton.render()
+        
+        ctx.fillStyle = 'black';
+        upgrade = data.upgradePath[selectedBuildingForUpgrade.upgradeLevel].option2
+        ctx.fillText(data.upgradePath[selectedBuildingForUpgrade.upgradeLevel].option2.message, canvas.width * 11 / 15, canvas.height *7/8);
+
+        if (rightButton.clicked && coins >= upgrade.cost) {
+            selectedBuildingForUpgrade[upgrade.feature] = upgrade.value
+            coins -= upgrade.cost
+            selectedBuildingForUpgrade.upgradeLevel += 1
+            selectedBuildingForUpgrade = null
+            return
+        }
+
+    } else {
+
+        
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle'; 
+
+        ctx.fillStyle = 'black'
+
+        ctx.fillText('Select a balloon to get started', canvas.width / 2, canvas.height * 3/4 + 20)
+
+        const b = new Button(canvas.width / 4, canvas.height * 7/8 - 20, canvas.width / 2, canvas.height / 8 - 5, 'yellow')
+        b.render()
+        ctx.fillStyle = 'black'
+
+        // It takes more questions for future upgrades.
+        const coinsNeededForUpgrade = 3 + (7 - coinsPerQuestion.length)
+
+        ctx.fillText(`${coinsPerQuestion[0] * coinsNeededForUpgrade}: Increase coins`, canvas.width / 2, canvas.height * 7/8)
+        if (b.clicked && mouseClick == 1 && coins >= coinsPerQuestion[0] * coinsNeededForUpgrade) {
+            coins -= coinsPerQuestion[0] * coinsNeededForUpgrade
+            coinsPerQuestion.shift()
+        }
     }
 }
 
@@ -930,7 +781,7 @@ function drawPurchaseArea() {
     attackButton.render()
     if (attackButton.clicked) { section = Section.Attack }
     upgradeButton.render()
-    if (upgradeButton.clicked) { console.log('Upgrade feature not built yet.')}
+    if (upgradeButton.clicked) { section = Section.Upgrade }
     questionButton.render()
     if (questionButton.clicked) { section = Section.Questions }
 
@@ -946,6 +797,10 @@ function drawPurchaseArea() {
         case Section.Questions:
             drawSectionQuestions()
             break;
+        
+        case Section.Upgrade:
+            drawSectionUpgrade()
+            break
 
         default:
             break;
@@ -966,7 +821,7 @@ function drawPurchaseArea() {
 
 
 function checkPlaceBuilding() {
-    mclick = myMap.clicked(isHost?45:canvas.width/2+20+45, 10, canvas.height*3/4-20)
+    const mclick = myMap.clicked(isHost?45:canvas.width/2+20+45, 10, canvas.height*3/4-20)
 
     if (mclick == false || selectedBuilding == null) {
         return
@@ -1044,7 +899,7 @@ function drawLobby() {
     ctx.fillStyle = 'black';
     ctx.fillText('Game Code:  ' + gameCode, canvas.width / 2, canvas.height / 4);
 
-    nicknameList = playerList.map(x => Object.values(x)[0]);
+    const nicknameList = playerList.map(x => Object.values(x)[0]);
     for (let i = 0; i < nicknameList.length; i++) {
         const player = nicknameList[i];
         ctx.fillText(player, canvas.width / 4, canvas.height / 2 + i * 24)
