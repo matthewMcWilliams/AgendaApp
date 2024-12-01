@@ -43,31 +43,37 @@ export class Building {
 
 export class Thorny extends Building {
     constructor(x, y) {
-        super(x, y)
+        super(x, y);
 
-        this.name = 'Thorny'
-        this.color = 'blue'
-        this.range = 2
-        this.cooldown = 2
-        this.cooldownTimer = this.cooldown
-        this.damage = 4
+        this.name = 'Thorny';
+        this.color = 'blue';
+        this.range = 2;
+        this.cooldown = 1.5;
+        this.cooldownTimer = this.cooldown;
+        this.damage = 7;
     }
 
     shoot(leadBalloon, map) {
-        super.shoot()
+        super.shoot();
         map.balloons.forEach(balloon => {
             if (distance(balloon.x, balloon.y, this.x, this.y) < this.range) {
-                balloon.health -= this.damage
+                balloon.health -= this.damage;
             }
-        })
+        });
     }
 
     renderAttack(leadBalloon, map) {
         if (this.cooldownTimer > this.cooldown - 0.1) {
-            drawCircle(map.x_0 + this.x * map.s / 10 + 14, map.y_0 + this.y * map.s / 10 + 14, this.range * 28, this.color)
+            drawCircle(
+                map.x_0 + this.x * map.s / 10 + 14,
+                map.y_0 + this.y * map.s / 10 + 14,
+                this.range * 28,
+                this.color
+            );
         }
     }
 }
+
 
 export class MagnifiedLaser extends Building {
     constructor(x, y) {
@@ -78,7 +84,7 @@ export class MagnifiedLaser extends Building {
         this.range = 3
         this.cooldown = 0.06
         this.cooldownTimer = this.cooldown
-        this.damage = 0.2
+        this.damage = 0.35
     }
 
     shoot(leadBalloon, map) {
@@ -156,7 +162,7 @@ export class SlowTower extends Building {
 
         this.name = 'Slow Tower'
         this.color = 'cyan'
-        this.range = 5
+        this.range = 3
         this.cooldown = 0.5
         this.cooldownTimer = this.cooldown
         this.slowEffect = 0.5 // Slow balloons by 50%
@@ -165,8 +171,9 @@ export class SlowTower extends Building {
     shoot(leadBalloon, map) {
         super.shoot()
         map.balloons.forEach(balloon => {
+            balloon.speedMultiplier = balloon.speedMultiplier + (1 - balloon.speedMultiplier) / 3
             if (distance(balloon.x, balloon.y, this.x, this.y) < this.range) {
-                balloon.speed *= (1 - this.slowEffect) // Slow the balloon speed
+                balloon.speedMultiplier = (1 - this.slowEffect) // Slow the balloon speed
             }
         })
     }
@@ -194,10 +201,12 @@ export class SplashCannon extends Building {
     shoot(leadBalloon, map) {
         super.shoot()
         map.balloons.forEach(balloon => {
-            if (distance(balloon.x, balloon.y, this.x, this.y) < this.splashRange) {
+            if (distance(balloon.x, balloon.y, leadBalloon.x, leadBalloon.y) < this.splashRange) {
                 balloon.health -= this.damage
             }
         })
+        this.previous_x = leadBalloon.x
+        this.previous_y = leadBalloon.y
     }
 
     renderAttack(leadBalloon, map) {
@@ -211,7 +220,7 @@ export class LightningTower extends Building {
     constructor(x, y) {
         super(x, y)
 
-        this.name = 'Lightning Tower'
+        this.name = 'Chain Lightning Tower'
         this.color = 'purple'
         this.range = 5
         this.cooldown = 0.1
@@ -300,8 +309,8 @@ export const buildingClassList = [
     Thorny,
     MagnifiedLaser,
     Railgun,
-    SlowTower,
     SplashCannon,
-    LightningTower,
-    SniperTower
+    SlowTower,
+    SniperTower,
+    LightningTower
 ]

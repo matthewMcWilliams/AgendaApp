@@ -9,7 +9,7 @@ export default [
     },
     {
       name: "Fast Balloon",
-      health: 5,
+      health: 8,
       cost: 2,
       size: 40,
       speed: 6,
@@ -17,7 +17,7 @@ export default [
     },
     {
       name: "Durable Balloon",
-      health: 25, // Increased durability
+      health: 40, // Increased durability
       cost: 4,
       size: 55,
       speed: 2,
@@ -25,15 +25,15 @@ export default [
     },
     {
       name: "Tiny Balloon",
-      health: 5,
+      health: 13,
       cost: 1,
       size: 35,
-      speed: 5,
+      speed: 4,
       color: "yellow"
     },
     {
       name: "Big Balloon",
-      health: 50, // Higher health for a bigger challenge
+      health: 90, // Higher health for a bigger challenge
       cost: 6,
       size: 70,
       speed: 2,

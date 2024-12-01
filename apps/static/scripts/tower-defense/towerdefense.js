@@ -338,7 +338,7 @@ class Map {
             let dirX = this.balloonPath[balloon.target].x - balloon.x
             let dirY = this.balloonPath[balloon.target].y - balloon.y
             
-            const speed = balloon.speed
+            const speed = balloon.speed * balloon.speedMultiplier
             balloon.x += clamp(dirX, -1/60*speed, 1/60*speed)
             balloon.y += clamp(dirY, -1/60*speed, 1/60*speed)
     
@@ -364,21 +364,23 @@ class WaveManager {
     }
 
     update() {
+        
+        if (this.waves.length == 0) {
+            return
+        }
 
         const noBalloons = hostMap.balloons.length == 0 && clientMap.balloons.length == 0
 
         if (this.queue.length == 0 && noBalloons) {
-            if (this.waves.length > 1) {
-                this.queue = this.waves[1]
-                this.waves.shift()
-                socket.emit('td-update_wave', {wave:this.waveCount+1, room:gameCode})
-            } else {
-                // console.log('Wave finished. No more waves.')
-            }
+            this.queue = this.waves[1]
+            this.waves.shift()
+            socket.emit('td-update_wave', {wave:this.waveCount+1, room:gameCode})
             return
         } else if (this.queue.length <= 0) {
             return
         }
+
+        
 
         this.queue[0].time -= 1
 
@@ -417,7 +419,7 @@ class WaveManager {
         ctx.textAlign = 'center'; // Center horizontally
         ctx.textBaseline = 'middle'; // Center vertically
         ctx.fillStyle = 'blue'; // Text color
-        ctx.fillText(this.waveCount, canvas.width / 2, canvas.height / 2); // Draw text at center
+        ctx.fillText(this.waves.length > 0 ? this.waveCount+1 : 'FREE for ALL!', canvas.width / 2, canvas.height / 2); // Draw text at center
 
     }
 }
@@ -434,6 +436,7 @@ class Balloon {
         this.size = balloonData[index].size
         this.color = balloonData[index].color
         this.speed = balloonData[index].speed
+        this.speedMultiplier = 1
 
         this.x = 1;
         this.y = 0;
@@ -570,12 +573,14 @@ function drawSectionAttack() {
         ctx.fillStyle = 'black'
         ctx.fillText(balloon.cost, 150+60*i, canvas.height - 20)
 
-        balloon.button.x = 150+60*i-55*balloon.size/100
-        balloon.button.y = canvas.height*7/8-55*balloon.size/100
-        balloon.button.width = 55*balloon.size/100*2
-        balloon.button.height = 55*balloon.size/100*2
+        const button = new Button(1,2,3,4,balloon.color)
 
-        if (balloon.button.clicked && coins >= balloon.cost && mouseClick == 1) {
+        button.x = 150+60*i-55*balloon.size/100
+        button.y = canvas.height*7/8-55*balloon.size/100
+        button.width = 55*balloon.size/100*2
+        button.height = 55*balloon.size/100*2
+
+        if (button.clicked && coins >= balloon.cost && mouseClick == 1) {
             if (isHost) {
                 socket.emit(
                     'td-spawn_balloon',
@@ -751,6 +756,10 @@ function drawSectionUpgrade() {
 
         ctx.fillText('Select a balloon to get started', canvas.width / 2, canvas.height * 3/4 + 20)
 
+        if (coinsPerQuestion.length <= 1) {
+            return
+        }
+
         const b = new Button(canvas.width / 4, canvas.height * 7/8 - 20, canvas.width / 2, canvas.height / 8 - 5, 'yellow')
         b.render()
         ctx.fillStyle = 'black'
@@ -758,7 +767,7 @@ function drawSectionUpgrade() {
         // It takes more questions for future upgrades.
         const coinsNeededForUpgrade = 3 + (7 - coinsPerQuestion.length)
 
-        ctx.fillText(`${coinsPerQuestion[0] * coinsNeededForUpgrade}: Increase coins`, canvas.width / 2, canvas.height * 7/8)
+        ctx.fillText(`${coinsPerQuestion[0] * coinsNeededForUpgrade}: Increase coins per question to ${coinsPerQuestion[1]}`, canvas.width / 2, canvas.height * 7/8)
         if (b.clicked && mouseClick == 1 && coins >= coinsPerQuestion[0] * coinsNeededForUpgrade) {
             coins -= coinsPerQuestion[0] * coinsNeededForUpgrade
             coinsPerQuestion.shift()
@@ -768,21 +777,57 @@ function drawSectionUpgrade() {
 
 
 
-let buildButton = new Button(20, canvas.height*3/4+20-5,30,30,'navy')
-let attackButton = new Button(60, canvas.height*3/4+20-5,30,30,'navy')
-let upgradeButton = new Button(20, canvas.height*3/4+60-5,30,30,'navy')
-let questionButton = new Button(60, canvas.height*3/4+60-5,30,30,'navy')
+let buildButton = new Button(20, canvas.height*3/4+20-5,30,30,   'Ivory')
+let attackButton = new Button(60, canvas.height*3/4+20-5,30,30,  'Ivory')
+let upgradeButton = new Button(20, canvas.height*3/4+60-5,30,30, 'Ivory')
+let questionButton = new Button(60, canvas.height*3/4+60-5,30,30,'Ivory')
+
+const buildImageH = new Image()
+const attackImageH = new Image()
+const upgradeImageH = new Image()
+const questionImageH = new Image()
+
+let buildImage, attackImage, upgradeImage, questionImage
+
+buildImageH.onload = async() => {
+    buildImage = await createImageBitmap(buildImageH)
+    console.log(buildImage)
+}
+buildImageH.src = '/static/imgs/tool-01.png'
+
+
+attackImageH.onload = async() => {
+    attackImage = await createImageBitmap(attackImageH)
+    console.log(attackImage)
+}
+attackImageH.src = '/static/imgs/target-03.png'
+
+upgradeImageH.onload = async() => {
+    upgradeImage = await createImageBitmap(upgradeImageH)
+}
+upgradeImageH.src = '/static/imgs/arrow-up.png'
+
+questionImageH.onload = async() => {
+    questionImage = await createImageBitmap(questionImageH)
+}
+questionImageH.src = '/static/imgs/message-question-circle.png'
+
+
 
 
 function drawPurchaseArea() {
 
     buildButton.render()
+    ctx.drawImage(buildImage, 23, canvas.height*3/4+20)
     if (buildButton.clicked) { section = Section.Build }
     attackButton.render()
+    ctx.drawImage(attackImage, 63, canvas.height*3/4+20)
     if (attackButton.clicked) { section = Section.Attack }
     upgradeButton.render()
+    ctx.drawImage(upgradeImage, 23, canvas.height*3/4+60)
     if (upgradeButton.clicked) { section = Section.Upgrade }
     questionButton.render()
+    ctx.drawImage(questionImage, 63, canvas.height*3/4+60)
     if (questionButton.clicked) { section = Section.Questions }
 
     switch (section) {

@@ -3,24 +3,24 @@ import Button from './Button.js'
 export default [
     {
         name: 'Thorny',
-        cost: 4,
+        cost: 2,
         color: 'blue',
         button: new Button(1, 2, 3, 4, 'blue'),
         index: 0,
-        range: 3,
+        range: 2,
 
         upgradePath: [
             {
                 option1: {
-                    message: '6: Increase Damage',
+                    message: '8: Increase Damage',
                     feature: 'damage',
-                    value: 7,
-                    cost: 6
+                    value: 11,
+                    cost: 8
                 },
                 option2: {
                     message: '4: Increase Range',
                     feature: 'range',
-                    value: 4,
+                    value: 3,
                     cost: 4
                 }
             },
@@ -56,19 +56,19 @@ export default [
     },
     {
         name: 'Magnified Laser',
-        cost: 6,
+        cost: 2,
         color: 'red',
         button: new Button(1, 2, 3, 4, 'red'),
         index: 1,
-        range: 5,
+        range: 3,
 
         upgradePath: [
             {
                 option1: {
                     message: '5: Increase Damage',
                     feature: 'damage',
-                    value: 0.8,
-                    cost: 5
+                    value: 1.0,
+                    cost: 7
                 },
                 option2: {
                     message: '5: Reduce Cooldown',
@@ -109,7 +109,7 @@ export default [
     },
     {
         name: 'Railgun',
-        cost: 10,
+        cost: 3,
         color: 'grey',
         button: new Button(1, 2, 3, 4, 'grey'),
         index: 2,
@@ -162,7 +162,7 @@ export default [
     },
     {
         name: 'Splash Cannon',
-        cost: 8,
+        cost: 5,
         color: 'yellow',
         button: new Button(1, 2, 3, 4, 'yellow'),
         index: 3,
@@ -218,7 +218,7 @@ export default [
         color: 'cyan',
         button: new Button(1, 2, 3, 4, 'cyan'),
         index: 4,
-        range: 5,
+        range: 3,
 
         upgradePath: [
             {
